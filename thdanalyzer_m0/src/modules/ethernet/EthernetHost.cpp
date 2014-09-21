@@ -12,6 +12,7 @@
 extern "C" {
 #include "tcp_ip_stack.h"
 #include "dhcp_client.h"
+#include "http_server.h"
 
 #include "lpc43xx_eth.h"
 #include "lan8720.h"
@@ -22,6 +23,9 @@ class EthernetHostState
 public:
 	DhcpClientSettings dhcpClientSettings;
 	DhcpClientCtx dhcpClientContext;
+
+	HttpServerSettings httpServerSettings;
+	HttpServerContext httpServerContext;
 
 	NetInterface *interface;
 };
@@ -41,6 +45,7 @@ void EthernetHost::Init()
 {
 	InitStack();
 	InitDhcp();
+	InitHttp();
 }
 
 void EthernetHost::InitStack()
@@ -97,10 +102,46 @@ void EthernetHost::InitDhcp()
    {
       //Debug message
       //TRACE_ERROR("Failed to initialize DHCP client!\r\n");
+	   return;
    }
 
    //Start DHCP client
    error = dhcpClientStart(&_state->dhcpClientContext);
+   //Failed to start DHCP client?
+   if(error)
+   {
+      //Debug message
+      //TRACE_ERROR("Failed to start DHCP client!\r\n");
+   }
+#endif
+}
+
+static error_t HttpCgiCallback(HttpConnection *connection, const char_t *param)
+{
+	const char data[] = "this is cgi\n";
+	error_t error = httpWriteStream(connection, data, strlen(data));
+
+	return error;
+}
+
+void EthernetHost::InitHttp()
+{
+	error_t error;
+
+#if (IPV4_SUPPORT == ENABLED)
+	httpServerGetDefaultSettings(&_state->httpServerSettings);
+   _state->httpServerSettings.interface = _state->interface;
+   _state->httpServerSettings.cgiCallback = HttpCgiCallback;
+
+   error = httpServerInit(&_state->httpServerContext, &_state->httpServerSettings);
+   //Failed to initialize DHCP client?
+   if(error)
+   {
+	   return;
+   }
+
+   //Start DHCP client
+   error = httpServerStart(&_state->httpServerContext);
    //Failed to start DHCP client?
    if(error)
    {

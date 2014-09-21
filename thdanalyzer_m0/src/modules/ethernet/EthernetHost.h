@@ -21,6 +21,7 @@ public:
 private:
 	void InitStack();
 	void InitDhcp();
+	void InitHttp();
 
 	EthernetHostState* _state;
 };

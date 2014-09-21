@@ -132,4 +132,7 @@
 //Number of sockets that can be opened simultaneously
 #define SOCKET_MAX_COUNT 5
 
+#define HTTP_SERVER_SUPPORT ENABLED
+#define HTTP_SERVER_SSI_SUPPORT ENABLED
+
 #endif
