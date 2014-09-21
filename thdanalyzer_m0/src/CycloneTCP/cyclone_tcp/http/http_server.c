@@ -1306,15 +1306,25 @@ error_t httpSendResponse(HttpConnection *connection, const char_t *uri)
    error_t error;
    size_t length;
    uint8_t *data;
+   char_t type;
 
    //Retrieve the full pathname
    httpGetAbsolutePath(connection, uri,
       connection->buffer, HTTP_SERVER_BUFFER_SIZE);
 
    //Get the resource data associated with the URI
-   error = resGetData(connection->buffer, &data, &length);
+   error = resGetData(connection->buffer, &data, &length, &type);
    //The specified URI cannot be found?
    if(error) return error;
+
+#if (HTTP_SERVER_SSI_SUPPORT == ENABLED)
+	//Use server-side scripting to dynamically generate HTML code?
+	if(type == RES_TYPE_CGI)
+	{
+	   //SSI processing (Server Side Includes)
+	   return ssiExecuteScript(connection, uri, 0);
+	}
+#endif
 #endif
 
    //Format HTTP response header

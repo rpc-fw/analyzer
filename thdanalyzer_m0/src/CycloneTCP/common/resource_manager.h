@@ -44,7 +44,8 @@
 typedef enum
 {
    RES_TYPE_DIR  = 1,
-   RES_TYPE_FILE = 2
+   RES_TYPE_FILE = 2,
+   RES_TYPE_CGI = 4
 } ResType;
 
 
@@ -120,7 +121,7 @@ typedef struct
 
 
 //Resource management
-error_t resGetData(const char_t *path, uint8_t **data, size_t *length);
+error_t resGetData(const char_t *path, uint8_t **data, size_t *length, char_t *type);
 
 error_t resSearchFile(const char_t *path, DirEntry *dirEntry);
 

@@ -34,7 +34,7 @@
 extern uint8_t res[];
 
 
-error_t resGetData(const char_t *path, uint8_t **data, size_t *length)
+error_t resGetData(const char_t *path, uint8_t **data, size_t *length, char_t *type)
 {
    bool_t found;
    bool_t match;
@@ -116,13 +116,15 @@ error_t resGetData(const char_t *path, uint8_t **data, size_t *length)
    if(!found)
       return ERROR_NOT_FOUND;
    //Enforce the entry type
-   if(resEntry->type != RES_TYPE_FILE)
+   if(resEntry->type != RES_TYPE_FILE && resEntry->type != RES_TYPE_CGI)
       return ERROR_NOT_FOUND;
 
    //Return the location of the specified resource
    *data = res + resEntry->dataStart;
    //Return the length of the resource
    *length = resEntry->dataLength;
+
+   *type = resEntry->type;
 
    //Successful processing
    return NO_ERROR;

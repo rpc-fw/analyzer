@@ -103,8 +103,9 @@ error_t ssiExecuteScript(HttpConnection *connection, const char_t *uri, uint_t l
       return ERROR_OUT_OF_MEMORY;
    }
 #else
+   char_t type;
    //Get the resource data associated with the URI
-   error = resGetData(connection->buffer, (uint8_t **) &data, &length);
+   error = resGetData(connection->buffer, (uint8_t **) &data, &length, &type);
    //The specified URI cannot be found?
    if(error) return error;
 #endif
@@ -119,6 +120,24 @@ error_t ssiExecuteScript(HttpConnection *connection, const char_t *uri, uint_t l
       connection->response.noCache = FALSE;
       connection->response.contentType = mimeGetType(uri);
       connection->response.chunkedEncoding = TRUE;
+
+      if(connection->settings->cgiHeaderCallback != NULL)
+      {
+    	  //Let CGI modify the response
+    	  error = connection->settings->cgiHeaderCallback(connection, &connection->response);
+          //Any error to report?
+          if(error)
+          {
+#if (HTTP_SERVER_FS_SUPPORT == ENABLED)
+             //Close the file
+             fsFileClose(file);
+             //Release memory buffer
+             osMemFree(buffer);
+#endif
+             //Return status code
+             return error;
+          }
+      }
 
       //Send the header to the client
       error = httpWriteHeader(connection);
@@ -533,13 +552,14 @@ error_t ssiProcessIncludeCommand(HttpConnection *connection,
       }
 #else
       uint8_t *data;
+      char_t type;
 
       //Retrieve the full pathname
       httpGetAbsolutePath(connection, path,
          connection->buffer, HTTP_SERVER_BUFFER_SIZE);
 
       //Get the resource data associated with the file
-      error = resGetData(connection->buffer, &data, &length);
+      error = resGetData(connection->buffer, &data, &length, &type);
 
       //Send the contents of the requested file
       if(!error)

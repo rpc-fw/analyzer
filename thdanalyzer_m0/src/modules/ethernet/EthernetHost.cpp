@@ -116,10 +116,19 @@ void EthernetHost::InitDhcp()
 #endif
 }
 
+static error_t HttpCgiHeaderCallback(HttpConnection *connection, HttpResponse *response)
+{
+	static const char mimeType[] = "application/octet-stream";
+	response->contentType = mimeType;
+
+	return NO_ERROR;
+}
+
 static error_t HttpCgiCallback(HttpConnection *connection, const char_t *param)
 {
-	const char data[] = "this is cgi\n";
-	error_t error = httpWriteStream(connection, data, strlen(data));
+	//const char data[] = "this is cgi\n";
+	//error_t error = httpWriteStream(connection, data, strlen(data));
+	error_t error = httpWriteStream(connection, (void*)0x28000000, 16*1048576);
 
 	return error;
 }
@@ -132,6 +141,7 @@ void EthernetHost::InitHttp()
 	httpServerGetDefaultSettings(&_state->httpServerSettings);
    _state->httpServerSettings.interface = _state->interface;
    _state->httpServerSettings.cgiCallback = HttpCgiCallback;
+   _state->httpServerSettings.cgiHeaderCallback = HttpCgiHeaderCallback;
 
    error = httpServerInit(&_state->httpServerContext, &_state->httpServerSettings);
    //Failed to initialize DHCP client?

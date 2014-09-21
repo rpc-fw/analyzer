@@ -68,7 +68,7 @@ private:
 
 		size_t dirsize = 0;
 		ResEntry* indexEntry = AllocEntry(dirsize, RES_TYPE_FILE, "index.htm");
-		ResEntry* cgiEntry = AllocEntry(dirsize, RES_TYPE_FILE, "index.shtml");
+		ResEntry* cgiEntry = AllocEntry(dirsize, RES_TYPE_CGI, "memory.raw");
 		rootHeader->rootEntry.dataStart = ResOffset(indexEntry);
 		rootHeader->rootEntry.dataLength = dirsize;
 

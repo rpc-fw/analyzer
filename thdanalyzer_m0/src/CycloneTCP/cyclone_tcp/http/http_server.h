@@ -311,6 +311,12 @@ typedef HttpAccessStatus (*AuthCallback)(HttpConnection *connection,
 typedef error_t (*CgiCallback)(HttpConnection *connection,
    const char_t *param);
 
+/**
+ * @brief CGI connection header callback function
+ **/
+
+struct _HttpResponse;
+typedef error_t (*CgiHeaderCallback)(HttpConnection *connection, struct _HttpResponse *response);
 
 /**
  * @brief URI not found callback function
@@ -395,7 +401,7 @@ typedef struct
  * @brief HTTP response
  **/
 
-typedef struct
+typedef struct _HttpResponse
 {
    uint_t version;              ///<HTTP version number
    uint_t statusCode;           ///<HTTP status code
@@ -433,6 +439,7 @@ typedef struct
    AuthCallback authCallback;                                   ///<HTTP authentication callback function
 #endif
    CgiCallback cgiCallback;                                     ///<CGI callback function
+   CgiHeaderCallback cgiHeaderCallback;							///<CGI connection header callback function
    UriNotFoundCallback uriNotFoundCallback;                     ///<URI not found callback function
 } HttpServerSettings;
 
