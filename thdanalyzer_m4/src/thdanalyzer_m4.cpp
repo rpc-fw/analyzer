@@ -53,10 +53,6 @@ int main(void) {
     CGU_Init(clock_multiplier);
     SystemCoreClock = clock_multiplier*12000000;
 
-    SysTick_Config(SystemCoreClock/1000);
-    emc_init();
-	memset((unsigned int*)SDRAM_BASE_ADDR, 0xFF, SDRAM_SIZE_BYTES);
-
     // Start M0APP slave processor
 #if defined (LPC43_MULTICORE_M0APP)
     cr_start_m0(SLAVE_M0APP,&__core_m0app_START__);
@@ -66,6 +62,10 @@ int main(void) {
 #if defined (LPC43_MULTICORE_M0SUB)
     cr_start_m0(SLAVE_M0SUB,&__core_m0sub_START__);
 #endif
+
+    SysTick_Config(SystemCoreClock/1000);
+    emc_init();
+	memset((unsigned int*)SDRAM_BASE_ADDR, 0xFF, SDRAM_SIZE_BYTES);
 
     audio.Init();
 

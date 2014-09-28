@@ -16,6 +16,8 @@
 
 // TODO: insert other include files here
 #include "modules/ethernet/EthernetHost.h"
+#include "modules/lcd1602.h"
+
 #include "FreeRTOS/include/freertos.h"
 #include "FreeRTOS/include/task.h"
 
@@ -25,6 +27,7 @@ uint32_t SystemCoreClock;
 
 // TODO: insert other definitions and declarations here
 EthernetHost ethhost;
+LCD1602 lcd;
 
 #if defined (M0_SLAVE_PAUSE_AT_MAIN)
 volatile unsigned int pause_at_main;
@@ -77,6 +80,8 @@ int main(void) {
 
     // TODO: insert code here
     init_freertos_heap();
+
+    lcd.Init();
 
     // Force the counter to be placed into memory
     volatile static int i = 0 ;
