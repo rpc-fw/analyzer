@@ -35,6 +35,7 @@ void check_failed(uint8_t *file, uint32_t line)
 // TODO: insert other include files here
 #include "emc_setup.h"
 #include "modules/audio.h"
+#include "lib/RingBuffer.h"
 
 extern "C"
 void SysTick_Handler(void)
@@ -46,6 +47,51 @@ void SysTick_Handler(void)
 
 // TODO: insert other definitions and declarations here
 Audio audio;
+
+float e = 2.0f * sin(2*3.141592654*440.0/48000.0/2.0);
+float y = 0.0;
+float yq = 1.0;
+
+#define INPUTRINGLEN (SDRAM_SIZE_BYTES/4)
+//dsp::RingBufferStatic<int32_t, 4> outputRing;
+dsp::RingBufferMemory<int32_t, INPUTRINGLEN, SDRAM_BASE_ADDR> inputRing;
+
+extern "C"
+void I2S0_IRQHandler(void)
+{
+	int outputFifoLevel = (LPC_I2S0->STATE >> 16) & 0xF;
+	if (outputFifoLevel <= 6) {
+		// iterate oscillator
+	 	yq = yq - e*y;
+		y = e*yq + y;
+
+		// write
+		LPC_I2S0->TXFIFO = int32_t(y * 0.5 * 2147483648.0);
+		LPC_I2S0->TXFIFO = int32_t(-y * 0.5 * 2147483648.0);
+	}
+
+	// I2S0 and I2S1 run in sync, so we can check both here
+
+	int inputFifoLevel0 = (LPC_I2S0->STATE >> 8) & 0xF;
+	if (inputFifoLevel0 >= 2) {
+		int32_t in_l = LPC_I2S0->RXFIFO;
+		int32_t in_r = LPC_I2S0->RXFIFO;
+		inputRing.insert(in_l);
+		inputRing.insert(in_r);
+	}
+
+	int inputFifoLevel1 = (LPC_I2S1->STATE >> 8) & 0xF;
+	if (inputFifoLevel1 >= 2) {
+		int32_t in_l = LPC_I2S1->RXFIFO;
+		int32_t in_r = LPC_I2S1->RXFIFO;
+		inputRing.insert(in_l);
+		inputRing.insert(in_r);
+	}
+
+	if (inputRing.used() >= INPUTRINGLEN-16) {
+		inputRing.advance(16);
+	}
+}
 
 int main(void) {
 
@@ -71,81 +117,6 @@ int main(void) {
 
     __enable_irq();
 
-    unsigned int* const membase = (unsigned int*)SDRAM_BASE_ADDR;
-    const int memsize = SDRAM_SIZE_BYTES/4;
-    int counter0 = 0;
-    int counter1 = 2;
-    float e = 2.0f * sin(2*3.141592654*440.0/48000.0/2.0);
-    float y = 0.0;
-    float yq = 1.0;
-    while (1)
-    {
-    	// wait for audio tx ready
-    	while (((LPC_I2S0->STATE >> 16) & 0xF) > 6);
-
-    	// iterate oscillator
-     	yq = yq - e*y;
-    	y = e*yq + y;
-
-    	// write
-    	LPC_I2S0->TXFIFO = int32_t(y * 2147483648.0);
-    	LPC_I2S0->TXFIFO = int32_t(-y * 2147483648.0);
-
-    	// read
-		while (((LPC_I2S0->STATE >> 8) & 0xF) > 1) {
-			int32_t in_l = LPC_I2S0->RXFIFO;
-			int32_t in_r = LPC_I2S0->RXFIFO;
-			membase[counter0++] = in_l;
-			membase[counter0++] = in_r;
-			counter0 += 2;
-			if (counter0 >= memsize) {
-				counter0 = 0;
-			}
-		}
-		while (((LPC_I2S1->STATE >> 8) & 0xF) > 1) {
-			int32_t in_l = LPC_I2S1->RXFIFO;
-			int32_t in_r = LPC_I2S1->RXFIFO;
-			membase[counter1++] = in_l;
-			membase[counter1++] = in_r;
-			counter1 += 2;
-			if (counter1 >= memsize) {
-				counter1 = 2;
-			}
-		}
-    }
-
-#if 0
-    /* ok, then what? */
-
-    unsigned int counter = 1;//0x55AA5500;
-    unsigned int* membase = (unsigned int*)SDRAM_BASE_ADDR;
-    const int memsize = (128/8)*1048576;
-    volatile unsigned int lastfail = 0xFFFFFFFF;
-    volatile unsigned int failures = 0;
-    volatile unsigned int cycles = 0;
-
-	for (int i = 0; i < memsize/4; i++) {
-		membase[i] = 0xFFFFFFFF;
-	}
-
-    while(1) {
-    	for (int i = 0; i < memsize/4; i++) {
-    		membase[i] = counter * (i + 1);
-    	}
-
-    	for (int i = 0; i < memsize/4-16; i++) {
-    		if (membase[i] != counter * (i + 1))
-    		{
-    			lastfail = i;
-    			failures++;
-    		}
-    	}
-
-    	counter += 0x55AA55FF;
-    	cycles++;
-    }
-#endif
-	// should not reach this
     while(1) {}
 	return 0;
 }
