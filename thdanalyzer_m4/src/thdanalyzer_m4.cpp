@@ -48,7 +48,7 @@ void SysTick_Handler(void)
 // TODO: insert other definitions and declarations here
 Audio audio;
 
-float e = 2.0f * sin(2*3.141592654*440.0/48000.0/2.0);
+volatile float e = 2.0f * sin(2*3.141592654*440.0/48000.0/2.0);
 float y = 0.0;
 float yq = 1.0;
 
@@ -64,8 +64,9 @@ void I2S0_IRQHandler(void)
 	int outputFifoLevel = (LPC_I2S0->STATE >> 16) & 0xF;
 	if (outputFifoLevel <= 6) {
 		// iterate oscillator
-	 	yq = yq - e*y;
-		y = e*yq + y;
+		float e_local = e;
+	 	yq = yq - e_local*y;
+		y = e_local*yq + y;
 
 		// write
 		LPC_I2S0->TXFIFO = int32_t(y * 0.5 * 2147483648.0);
@@ -97,6 +98,12 @@ void I2S0_IRQHandler(void)
 	*inputRingReadPtr = inputRing.oldestPtr();
 }
 
+struct GeneratorParameters
+{
+	int32_t update;
+	float frequency;
+};
+
 int main(void) {
 
 	const int clock_multiplier = 17;
@@ -121,6 +128,17 @@ int main(void) {
 
     __enable_irq();
 
-    while(1) {}
+	volatile GeneratorParameters* params = (volatile GeneratorParameters*) 0x2000C010;
+	params->update = 1;
+	params->frequency = 440.0;
+	int last_update = 0;
+    while(1) {
+    	GeneratorParameters curparams;
+    	memcpy(&curparams, (void*)params, sizeof(curparams));
+    	if (last_update != curparams.update) {
+    		e = 2.0f * sin(2.f*3.141592654f*curparams.frequency/48000.0f/2.0f);
+    		last_update = curparams.update;
+    	}
+    }
 	return 0;
 }

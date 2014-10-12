@@ -81,6 +81,7 @@ error_t GeneratorParameterCgiHandler::Header(HttpConnection *connection, HttpRes
 
 struct GeneratorParameters
 {
+	int32_t update;
 	float frequency;
 };
 
@@ -88,7 +89,7 @@ const char invalidParameterReply[] = "Invalid parameters\n";
 
 error_t GeneratorParameterCgiHandler::Request(HttpConnection *connection)
 {
-	GeneratorParameters* params = (GeneratorParameters*) 0x2000C010;
+	volatile GeneratorParameters* params = (volatile GeneratorParameters*) 0x2000C010;
 
 	ParameterId paramid = ParseRequest(connection->request.uri);
 
@@ -99,11 +100,14 @@ error_t GeneratorParameterCgiHandler::Request(HttpConnection *connection)
 	{
 	case FREQUENCY:
 	{
-		bool parsed = ParseFloat(params->frequency, connection->request.queryString);
+		float freq = 0.0;
+		bool parsed = ParseFloat(freq, connection->request.queryString);
 		if (!parsed) {
 			httpWriteStream(connection, invalidParameterReply, sizeof(invalidParameterReply));
 			return NO_ERROR;
 		}
+		params->frequency = freq;
+		params->update++;
 		n = snprintf(reply, sizeof(reply), "Frequency set to %f\n", params->frequency);
 		break;
 	}
