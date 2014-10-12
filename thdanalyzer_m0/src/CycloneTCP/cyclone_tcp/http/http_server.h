@@ -316,7 +316,7 @@ typedef error_t (*CgiCallback)(HttpConnection *connection,
  **/
 
 struct _HttpResponse;
-typedef error_t (*CgiHeaderCallback)(HttpConnection *connection, struct _HttpResponse *response);
+typedef error_t (*CgiHeaderCallback)(HttpConnection *connection, struct _HttpResponse *response, const char_t *path);
 
 /**
  * @brief URI not found callback function

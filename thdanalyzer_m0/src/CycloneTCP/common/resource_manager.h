@@ -121,7 +121,7 @@ typedef struct
 
 
 //Resource management
-error_t resGetData(const char_t *path, uint8_t **data, size_t *length, char_t *type);
+error_t resGetData(const char_t *path, uint8_t **data, size_t *length, char_t *type, const char_t **filename);
 
 error_t resSearchFile(const char_t *path, DirEntry *dirEntry);
 

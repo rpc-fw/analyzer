@@ -1306,6 +1306,7 @@ error_t httpSendResponse(HttpConnection *connection, const char_t *uri)
    error_t error;
    size_t length;
    uint8_t *data;
+   const char_t *path;
    char_t type;
 
    //Retrieve the full pathname
@@ -1313,7 +1314,7 @@ error_t httpSendResponse(HttpConnection *connection, const char_t *uri)
       connection->buffer, HTTP_SERVER_BUFFER_SIZE);
 
    //Get the resource data associated with the URI
-   error = resGetData(connection->buffer, &data, &length, &type);
+   error = resGetData(connection->buffer, &data, &length, &type, &path);
    //The specified URI cannot be found?
    if(error) return error;
 

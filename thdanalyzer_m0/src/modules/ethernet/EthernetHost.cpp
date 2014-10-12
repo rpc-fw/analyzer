@@ -1,14 +1,3 @@
-/*
- * ethernet.cpp
- *
- *  Created on: Sep 14, 2014
- *      Author: ld0d
- */
-
-
-
-#include "EthernetHost.h"
-
 extern "C" {
 #include "tcp_ip_stack.h"
 #include "dhcp_client.h"
@@ -17,6 +6,10 @@ extern "C" {
 #include "lpc43xx_eth.h"
 #include "lan8720.h"
 };
+
+#include "EthernetHost.h"
+#include "HttpResource.h"
+#include "CgiCallback.h"
 
 class EthernetHostState
 {
@@ -116,52 +109,14 @@ void EthernetHost::InitDhcp()
 #endif
 }
 
-static error_t HttpCgiHeaderCallback(HttpConnection *connection, HttpResponse *response)
-{
-	static const char mimeType[] = "application/octet-stream";
-	response->contentType = mimeType;
-
-	return NO_ERROR;
-}
-
-static error_t HttpCgiCallback(HttpConnection *connection, const char_t *param)
-{
-	int32_t** readPtr = (int32_t**) 0x2000C000;
-	int32_t* startPtr = *readPtr;
-	const int32_t bufferend = 16*1048576;
-	int32_t startpos = (int32_t)startPtr & 0xFFFFFF;
-	int32_t endpos = startpos + 16*1048576/2;
-
-	int firstpartlen = 0;
-	int secondpartlen = 0;
-	if (endpos > bufferend) {
-		secondpartlen = endpos - bufferend;
-		firstpartlen = bufferend - startpos;
-	}
-	else {
-		firstpartlen = endpos - startpos;
-		secondpartlen = 0;
-	}
-
-	int secondstart = 0x28000000;
-	httpWriteStream(connection, &firstpartlen, 4);
-	httpWriteStream(connection, &startPtr, 4);
-	httpWriteStream(connection, &secondpartlen, 4);
-	httpWriteStream(connection, &secondstart, 4);
-
-	if (firstpartlen > 0) {
-		httpWriteStream(connection, (void*)startPtr, firstpartlen);
-	}
-	if (secondpartlen > 0) {
-		httpWriteStream(connection, (void*)0x28000000, secondpartlen);
-	}
-}
-
 void EthernetHost::InitHttp()
 {
 	error_t error;
 
 #if (IPV4_SUPPORT == ENABLED)
+
+	InitHttpResources();
+
 	httpServerGetDefaultSettings(&_state->httpServerSettings);
    _state->httpServerSettings.interface = _state->interface;
    _state->httpServerSettings.cgiCallback = HttpCgiCallback;

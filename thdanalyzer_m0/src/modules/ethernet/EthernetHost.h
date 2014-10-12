@@ -1,10 +1,3 @@
-/*
- * ethernet.h
- *
- *  Created on: Sep 14, 2014
- *      Author: ld0d
- */
-
 #ifndef ETHERNET_H_
 #define ETHERNET_H_
 

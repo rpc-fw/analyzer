@@ -1,6 +1,9 @@
 #include "tcp_ip_stack.h"
 #include "resource_manager.h"
 
+#include "cgi/MemoryDumpCgiHandler.h"
+#include "CgiCallback.h"
+
 uint8_t res[2048];
 static size_t resAllocated = sizeof(ResHeader);
 
@@ -55,10 +58,8 @@ class HttpResourceManager
 public:
 	HttpResourceManager()
 	{
-		InitResources();
 	}
 
-private:
 	void InitResources()
 	{
 		ResHeader* rootHeader = (ResHeader*)res;
@@ -73,8 +74,18 @@ private:
 		rootHeader->rootEntry.dataLength = dirsize;
 
 		AllocDataString(indexEntry, "Hello, world!\n");
-		AllocDataString(cgiEntry, "<!--#execcgi=root-->");
+		AllocDataString(cgiEntry, "<!--#execcgi=memory.raw-->");
+
+		SetCgiHandler("memory.raw", _memdump);
 	}
+
+private:
+	MemoryDumpCgiHandler _memdump;
 };
 
 static HttpResourceManager httpResources;
+
+void InitHttpResources()
+{
+	httpResources.InitResources();
+}

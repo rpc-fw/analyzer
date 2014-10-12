@@ -34,7 +34,7 @@
 extern uint8_t res[];
 
 
-error_t resGetData(const char_t *path, uint8_t **data, size_t *length, char_t *type)
+error_t resGetData(const char_t *path, uint8_t **data, size_t *length, char_t *type, const char_t **filename)
 {
    bool_t found;
    bool_t match;
@@ -87,6 +87,12 @@ error_t resGetData(const char_t *path, uint8_t **data, size_t *length, char_t *t
                //Point to the contents of the directory
                resEntry = (ResEntry *) (res + resEntry->dataStart);
             }
+            else if(resEntry->type == RES_TYPE_CGI)
+            {
+            	//A CGI script may appear at any point along path
+            	found = TRUE;
+            	match = TRUE;
+            }
             else
             {
                //A file may only appear at the end of the path
@@ -98,6 +104,7 @@ error_t resGetData(const char_t *path, uint8_t **data, size_t *length, char_t *t
             }
             //The current entry matches the specified path
             match = TRUE;
+            *filename = path;
          }
          else
          {

@@ -104,8 +104,9 @@ error_t ssiExecuteScript(HttpConnection *connection, const char_t *uri, uint_t l
    }
 #else
    char_t type;
+   const char_t *path;
    //Get the resource data associated with the URI
-   error = resGetData(connection->buffer, (uint8_t **) &data, &length, &type);
+   error = resGetData(connection->buffer, (uint8_t **) &data, &length, &type, &path);
    //The specified URI cannot be found?
    if(error) return error;
 #endif
@@ -124,7 +125,7 @@ error_t ssiExecuteScript(HttpConnection *connection, const char_t *uri, uint_t l
       if(connection->settings->cgiHeaderCallback != NULL)
       {
     	  //Let CGI modify the response
-    	  error = connection->settings->cgiHeaderCallback(connection, &connection->response);
+    	  error = connection->settings->cgiHeaderCallback(connection, &connection->response, path);
           //Any error to report?
           if(error)
           {
@@ -553,13 +554,14 @@ error_t ssiProcessIncludeCommand(HttpConnection *connection,
 #else
       uint8_t *data;
       char_t type;
+      const char_t *path;
 
       //Retrieve the full pathname
       httpGetAbsolutePath(connection, path,
          connection->buffer, HTTP_SERVER_BUFFER_SIZE);
 
       //Get the resource data associated with the file
-      error = resGetData(connection->buffer, &data, &length, &type);
+      error = resGetData(connection->buffer, &data, &length, &type, &path);
 
       //Send the contents of the requested file
       if(!error)
