@@ -35,10 +35,10 @@ volatile unsigned int pause_at_main;
 
 void init_freertos_heap()
 {
-	// Allocate the 16kB AHB SRAM bank at 0x20008000 for the Ethernet/IP stack.
+	// Allocate the 32kB+16kB AHB SRAM bank at 0x20000000-0x2000BFFF for the Ethernet/IP stack.
 	const HeapRegion_t xHeapRegions[] =
 	{
-	    { ( uint8_t * ) 0x20000000UL, 0x10000 },
+	    { ( uint8_t * ) 0x20000000UL, 0xC000 },
 	    { NULL, 0 } /* Terminates the array. */
 	};
 

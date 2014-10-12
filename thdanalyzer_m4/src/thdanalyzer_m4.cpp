@@ -56,6 +56,8 @@ float yq = 1.0;
 //dsp::RingBufferStatic<int32_t, 4> outputRing;
 dsp::RingBufferMemory<int32_t, INPUTRINGLEN, SDRAM_BASE_ADDR> inputRing;
 
+const int32_t** inputRingReadPtr = (const int32_t**) 0x2000C000;
+
 extern "C"
 void I2S0_IRQHandler(void)
 {
@@ -88,9 +90,11 @@ void I2S0_IRQHandler(void)
 		inputRing.insert(in_r);
 	}
 
-	if (inputRing.used() >= INPUTRINGLEN-16) {
+	if (inputRing.used() >= INPUTRINGLEN/2+16UL) {
 		inputRing.advance(16);
 	}
+
+	*inputRingReadPtr = inputRing.oldestPtr();
 }
 
 int main(void) {
