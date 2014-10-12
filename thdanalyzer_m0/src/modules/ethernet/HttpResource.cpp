@@ -2,6 +2,7 @@
 #include "resource_manager.h"
 
 #include "cgi/MemoryDumpCgiHandler.h"
+#include "cgi/GeneratorParameterCgiHandler.h"
 #include "CgiCallback.h"
 
 uint8_t res[2048];
@@ -70,17 +71,21 @@ public:
 		size_t dirsize = 0;
 		ResEntry* indexEntry = AllocEntry(dirsize, RES_TYPE_FILE, "index.htm");
 		ResEntry* cgiEntry = AllocEntry(dirsize, RES_TYPE_CGI, "memory.raw");
+		ResEntry* genEntry = AllocEntry(dirsize, RES_TYPE_CGI, "gen");
 		rootHeader->rootEntry.dataStart = ResOffset(indexEntry);
 		rootHeader->rootEntry.dataLength = dirsize;
 
 		AllocDataString(indexEntry, "Hello, world!\n");
 		AllocDataString(cgiEntry, "<!--#execcgi=memory.raw-->");
+		AllocDataString(genEntry, "<!--#execcgi=gen-->");
 
 		SetCgiHandler("memory.raw", _memdump);
+		SetCgiHandler("gen", _genparam);
 	}
 
 private:
 	MemoryDumpCgiHandler _memdump;
+	GeneratorParameterCgiHandler _genparam;
 };
 
 static HttpResourceManager httpResources;
