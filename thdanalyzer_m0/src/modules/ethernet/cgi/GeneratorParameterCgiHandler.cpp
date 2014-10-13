@@ -8,13 +8,18 @@
 enum ParameterId
 {
 	UNKNOWN = 0,
-	FREQUENCY
+	FREQUENCY,
+	LEVEL
 };
 
 ParameterId ParseRequest(const char* request_uri)
 {
 	if (!strcmp(request_uri, "/gen/frequency")) {
 		return FREQUENCY;
+	}
+
+	if (!strcmp(request_uri, "/gen/level")) {
+		return LEVEL;
 	}
 
 	return UNKNOWN;
@@ -83,6 +88,7 @@ struct GeneratorParameters
 {
 	int32_t update;
 	float frequency;
+	float level;
 };
 
 const char invalidParameterReply[] = "Invalid parameters\n";
@@ -100,15 +106,32 @@ error_t GeneratorParameterCgiHandler::Request(HttpConnection *connection)
 	{
 	case FREQUENCY:
 	{
-		float freq = 0.0;
-		bool parsed = ParseFloat(freq, connection->request.queryString);
+		float frequency = 0.0;
+		bool parsed = ParseFloat(frequency, connection->request.queryString);
 		if (!parsed) {
 			httpWriteStream(connection, invalidParameterReply, sizeof(invalidParameterReply));
 			return NO_ERROR;
 		}
-		params->frequency = freq;
+		if (frequency > 23000.0) frequency = 23000.0;
+		else if (frequency < -1.0) frequency = 1.0;
+		params->frequency = frequency;
 		params->update++;
 		n = snprintf(reply, sizeof(reply), "Frequency set to %f\n", params->frequency);
+		break;
+	}
+	case LEVEL:
+	{
+		float level = 0.0;
+		bool parsed = ParseFloat(level, connection->request.queryString);
+		if (!parsed) {
+			httpWriteStream(connection, invalidParameterReply, sizeof(invalidParameterReply));
+			return NO_ERROR;
+		}
+		if (level > 20.0) level = 20.0;
+		else if (level < -80.0) level = -80.0;
+		params->level = level;
+		params->update++;
+		n = snprintf(reply, sizeof(reply), "Level set to %f dBu\n", params->level);
 		break;
 	}
 	default:

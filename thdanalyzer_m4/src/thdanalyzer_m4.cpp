@@ -48,9 +48,45 @@ void SysTick_Handler(void)
 // TODO: insert other definitions and declarations here
 Audio audio;
 
-volatile float e = 2.0f * sin(2*3.141592654*440.0/48000.0/2.0);
+struct OscillatorParameters
+{
+	float e;
+	float level;
+};
+
+OscillatorParameters oscparam[3];
+
+OscillatorParameters* volatile current_params = &oscparam[0];
+OscillatorParameters* volatile next_params = current_params;
+
+OscillatorParameters* FindFreeParams()
+{
+	bool used[3] = { false, false, false };
+
+	OscillatorParameters* next_ptr = next_params;
+
+	used[current_params - &oscparam[0]] = true;
+	if (next_ptr) {
+		used[next_ptr - &oscparam[0]] = true;
+	}
+
+	for (int i = 0; i < 3; i++) {
+		if (!used[i]) {
+			return &oscparam[i];
+		}
+	}
+
+	// shouldn't reach here
+	//while(1);
+	return &oscparam[0];
+}
+
 float y = 0.0;
 float yq = 1.0;
+float maxlevel = 1.0;
+float maxlevelinv = 1.0;
+
+volatile int last_update = 0;
 
 #define INPUTRINGLEN (SDRAM_SIZE_BYTES/4)
 //dsp::RingBufferStatic<int32_t, 4> outputRing;
@@ -61,16 +97,34 @@ const int32_t** inputRingReadPtr = (const int32_t**) 0x2000C000;
 extern "C"
 void I2S0_IRQHandler(void)
 {
+	if (next_params != 0) {
+		current_params = next_params;
+		next_params = 0;
+
+		// reset oscillator
+		yq = 1.0;
+		y = 0.0;
+		maxlevel = 0.5;
+		maxlevelinv = 2.0;
+	}
 	int outputFifoLevel = (LPC_I2S0->STATE >> 16) & 0xF;
 	if (outputFifoLevel <= 6) {
 		// iterate oscillator
-		float e_local = e;
+		float e_local = current_params->e;
+		float gain_local = current_params->level;
 	 	yq = yq - e_local*y;
 		y = e_local*yq + y;
 
+		if (y > maxlevel) {
+			maxlevel = y;
+			maxlevelinv = 1.0 / y;
+		}
+
+		gain_local *= maxlevelinv;
+
 		// write
-		LPC_I2S0->TXFIFO = int32_t(y * 0.5 * 2147483648.0);
-		LPC_I2S0->TXFIFO = int32_t(-y * 0.5 * 2147483648.0);
+		LPC_I2S0->TXFIFO = int32_t(y * gain_local * 2147483648.0);
+		LPC_I2S0->TXFIFO = int32_t(-y * gain_local * 2147483648.0);
 	}
 
 	// I2S0 and I2S1 run in sync, so we can check both here
@@ -102,6 +156,7 @@ struct GeneratorParameters
 {
 	int32_t update;
 	float frequency;
+	float level;
 };
 
 int main(void) {
@@ -109,6 +164,15 @@ int main(void) {
 	const int clock_multiplier = 17;
     CGU_Init(clock_multiplier);
     SystemCoreClock = clock_multiplier*12000000;
+
+    // Setup parameters
+	volatile GeneratorParameters* params = (volatile GeneratorParameters*) 0x2000C010;
+	params->update = 1;
+	params->frequency = 440.0;
+	params->level = 4.0;
+
+	oscparam[0].e = 0.0;
+	oscparam[0].level = 0.0;
 
     // Start M0APP slave processor
 #if defined (LPC43_MULTICORE_M0APP)
@@ -128,16 +192,22 @@ int main(void) {
 
     __enable_irq();
 
-	volatile GeneratorParameters* params = (volatile GeneratorParameters*) 0x2000C010;
-	params->update = 1;
-	params->frequency = 440.0;
-	int last_update = 0;
     while(1) {
     	GeneratorParameters curparams;
     	memcpy(&curparams, (void*)params, sizeof(curparams));
     	if (last_update != curparams.update) {
-    		e = 2.0f * sin(2.f*3.141592654f*curparams.frequency/48000.0f/2.0f);
+
+    		OscillatorParameters* other_params = FindFreeParams();
+
+    		float sincoeff = 2.f*3.141592654f*curparams.frequency/48000.0f/2.0f;
+    		other_params->e = 2.0f * sinf(sincoeff);
+
+    		float levelscale = powf(10.0f, curparams.level * 0.05f);
+    		other_params->level = levelscale * 0.5f * 2.19089023f / 25.6f;
     		last_update = curparams.update;
+
+    		// put new parameter set in mailbox
+    		next_params = other_params;
     	}
     }
 	return 0;
