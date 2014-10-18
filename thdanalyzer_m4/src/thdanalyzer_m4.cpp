@@ -36,6 +36,10 @@ void check_failed(uint8_t *file, uint32_t line)
 #include "emc_setup.h"
 #include "modules/audio.h"
 #include "lib/RingBuffer.h"
+#include "lib/IpcMailbox.h"
+#include "lib/LocalMailbox.h"
+
+#include "common/sharedtypes.h"
 
 extern "C"
 void SysTick_Handler(void)
@@ -54,32 +58,7 @@ struct OscillatorParameters
 	float level;
 };
 
-OscillatorParameters oscparam[3];
-
-OscillatorParameters* volatile current_params = &oscparam[0];
-OscillatorParameters* volatile next_params = current_params;
-
-OscillatorParameters* FindFreeParams()
-{
-	bool used[3] = { false, false, false };
-
-	OscillatorParameters* next_ptr = next_params;
-
-	used[current_params - &oscparam[0]] = true;
-	if (next_ptr) {
-		used[next_ptr - &oscparam[0]] = true;
-	}
-
-	for (int i = 0; i < 3; i++) {
-		if (!used[i]) {
-			return &oscparam[i];
-		}
-	}
-
-	// shouldn't reach here
-	//while(1);
-	return &oscparam[0];
-}
+LocalMailbox<OscillatorParameters> oscMailbox;
 
 float y = 0.0;
 float yq = 1.0;
@@ -93,13 +72,12 @@ volatile int last_update = 0;
 dsp::RingBufferMemory<int32_t, INPUTRINGLEN, SDRAM_BASE_ADDR> inputRing;
 
 const int32_t** inputRingReadPtr = (const int32_t**) 0x2000C000;
+OscillatorParameters current_params = { .e = 0, .level = 0 };
 
 extern "C"
 void I2S0_IRQHandler(void)
 {
-	if (next_params != 0) {
-		current_params = next_params;
-		next_params = 0;
+	if (oscMailbox.Read(current_params)) {
 
 		// reset oscillator
 		yq = 1.0;
@@ -110,8 +88,8 @@ void I2S0_IRQHandler(void)
 	int outputFifoLevel = (LPC_I2S0->STATE >> 16) & 0xF;
 	if (outputFifoLevel <= 6) {
 		// iterate oscillator
-		float e_local = current_params->e;
-		float gain_local = current_params->level;
+		float e_local = current_params.e;
+		float gain_local = current_params.level;
 	 	yq = yq - e_local*y;
 		y = e_local*yq + y;
 
@@ -152,27 +130,11 @@ void I2S0_IRQHandler(void)
 	*inputRingReadPtr = inputRing.oldestPtr();
 }
 
-struct GeneratorParameters
-{
-	int32_t update;
-	float frequency;
-	float level;
-};
-
 int main(void) {
 
 	const int clock_multiplier = 17;
     CGU_Init(clock_multiplier);
     SystemCoreClock = clock_multiplier*12000000;
-
-    // Setup parameters
-	volatile GeneratorParameters* params = (volatile GeneratorParameters*) 0x2000C010;
-	params->update = 1;
-	params->frequency = 440.0;
-	params->level = 4.0;
-
-	oscparam[0].e = 0.0;
-	oscparam[0].level = 0.0;
 
     // Start M0APP slave processor
 #if defined (LPC43_MULTICORE_M0APP)
@@ -193,21 +155,18 @@ int main(void) {
     __enable_irq();
 
     while(1) {
-    	GeneratorParameters curparams;
-    	memcpy(&curparams, (void*)params, sizeof(curparams));
-    	if (last_update != curparams.update) {
+    	GeneratorParameters newparams;
+    	if (commandMailbox.Read(newparams)) {
+    		OscillatorParameters irqparams;
 
-    		OscillatorParameters* other_params = FindFreeParams();
+    		float sincoeff = 2.f*3.141592654f*newparams.frequency/48000.0f/2.0f;
+    		irqparams.e = 2.0f * sinf(sincoeff);
 
-    		float sincoeff = 2.f*3.141592654f*curparams.frequency/48000.0f/2.0f;
-    		other_params->e = 2.0f * sinf(sincoeff);
+    		float levelscale = powf(10.0f, newparams.level * 0.05f);
+    		irqparams.level = levelscale * 0.5f * 2.19089023f / 25.6f;
 
-    		float levelscale = powf(10.0f, curparams.level * 0.05f);
-    		other_params->level = levelscale * 0.5f * 2.19089023f / 25.6f;
-    		last_update = curparams.update;
-
-    		// put new parameter set in mailbox
-    		next_params = other_params;
+    		oscMailbox.Write(irqparams);
+    		ackMailbox.Write(true);
     	}
     }
 	return 0;

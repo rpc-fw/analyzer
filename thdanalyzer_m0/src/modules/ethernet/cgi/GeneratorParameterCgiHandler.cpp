@@ -4,6 +4,8 @@
 
 #include "GeneratorParameterCgiHandler.h"
 
+#include "IpcMailbox.h"
+#include "sharedtypes.h"
 
 enum ParameterId
 {
@@ -84,19 +86,12 @@ error_t GeneratorParameterCgiHandler::Header(HttpConnection *connection, HttpRes
 	return NO_ERROR;
 }
 
-struct GeneratorParameters
-{
-	int32_t update;
-	float frequency;
-	float level;
-};
-
 const char invalidParameterReply[] = "Invalid parameters\n";
+
+GeneratorParameters currentparams = { .frequency = 1000, .level = 4 };
 
 error_t GeneratorParameterCgiHandler::Request(HttpConnection *connection)
 {
-	volatile GeneratorParameters* params = (volatile GeneratorParameters*) 0x2000C010;
-
 	ParameterId paramid = ParseRequest(connection->request.uri);
 
 	char reply[256];
@@ -114,9 +109,11 @@ error_t GeneratorParameterCgiHandler::Request(HttpConnection *connection)
 		}
 		if (frequency > 23000.0) frequency = 23000.0;
 		else if (frequency < -1.0) frequency = 1.0;
-		params->frequency = frequency;
-		params->update++;
-		n = snprintf(reply, sizeof(reply), "Frequency set to %f\n", params->frequency);
+
+		currentparams.frequency = frequency;
+		commandMailbox.Write(currentparams);
+		ackMailbox.Read();
+		n = snprintf(reply, sizeof(reply), "Frequency set to %f\n", currentparams.frequency);
 		break;
 	}
 	case LEVEL:
@@ -129,9 +126,10 @@ error_t GeneratorParameterCgiHandler::Request(HttpConnection *connection)
 		}
 		if (level > 20.0) level = 20.0;
 		else if (level < -80.0) level = -80.0;
-		params->level = level;
-		params->update++;
-		n = snprintf(reply, sizeof(reply), "Level set to %f dBu\n", params->level);
+		currentparams.level = level;
+		commandMailbox.Write(currentparams);
+		ackMailbox.Read();
+		n = snprintf(reply, sizeof(reply), "Level set to %f dBu\n", currentparams.level);
 		break;
 	}
 	default:

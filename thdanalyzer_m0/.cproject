@@ -173,6 +173,8 @@
 								<option id="com.crt.advproject.cpp.hdrlib.1609803627" name="Library headers" superClass="com.crt.advproject.cpp.hdrlib" value="com.crt.advproject.cpp.hdrlib.newlibnano" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1595608012" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_LPC43xx_DriverLib-M0/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/thdanalyzer_m4/src/lib}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/thdanalyzer_m4/src/common}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CycloneTCP/cyclone_tcp/drivers}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CycloneTCP/cyclone_tcp/dns}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CycloneTCP/cyclone_tcp/dhcp}&quot;"/>
@@ -253,8 +255,8 @@
 								</option>
 								<option id="com.crt.advproject.link.cpp.multicore.slave.1530130457" name="Multicore configuration" superClass="com.crt.advproject.link.cpp.multicore.slave" value="M0APP" valueType="string"/>
 								<option id="com.crt.advproject.link.cpp.stackOffset.699849100" name="Stack offset" superClass="com.crt.advproject.link.cpp.stackOffset" value="256" valueType="string"/>
-								<option id="com.crt.advproject.link.cpp.nanofloat.scanf.1776017364" superClass="com.crt.advproject.link.cpp.nanofloat.scanf" value="true" valueType="boolean"/>
-								<option id="com.crt.advproject.link.cpp.nanofloat.1483407792" superClass="com.crt.advproject.link.cpp.nanofloat" value="true" valueType="boolean"/>
+								<option id="com.crt.advproject.link.cpp.nanofloat.scanf.1776017364" name="Enable scanf float " superClass="com.crt.advproject.link.cpp.nanofloat.scanf" value="true" valueType="boolean"/>
+								<option id="com.crt.advproject.link.cpp.nanofloat.1483407792" name="Enable printf float " superClass="com.crt.advproject.link.cpp.nanofloat" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1786483058" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
