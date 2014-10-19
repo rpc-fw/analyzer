@@ -424,13 +424,17 @@ public:
 	}
 
 	T oldest() const {
-		return this->Buffer()[_start];
+		return *oldestPtr();
+	}
+
+	const T* latestPtr() const {
+		int i = _end - 1;
+		if (i < 0) i += LEN;
+		return &this->Buffer()[i];
 	}
 
 	T latest() const {
-		int i = _end - 1;
-		if (i < 0) i += LEN;
-		return this->Buffer()[i];
+		return *latestPtr();
 	}
 
 	void get(T *out, int numsamples) {

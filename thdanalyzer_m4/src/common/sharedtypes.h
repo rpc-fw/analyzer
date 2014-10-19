@@ -10,10 +10,23 @@ struct GeneratorParameters
 	float level;
 };
 
-typedef IpcMailboxMemory<COMMON_SHMEM_ADDRESS> MailboxMemory;
-typedef IpcMailbox<GeneratorParameters, MailboxMemory> CommandMailbox;
-CommandMailbox commandMailbox;
-typedef IpcMailbox<bool, CommandMailbox> AckMailbox;
-AckMailbox ackMailbox;
+#include "IpcMailbox.h"
+#include "MemorySlot.h"
+
+namespace {
+	typedef IpcMailboxMemory<COMMON_SHMEM_ADDRESS> MailboxMemory;
+
+	typedef IpcMailbox<GeneratorParameters, MailboxMemory> CommandMailbox;
+	CommandMailbox commandMailbox;
+
+	typedef IpcMailbox<bool, CommandMailbox> AckMailbox;
+	AckMailbox ackMailbox;
+
+	typedef MemorySlot<const int32_t*, AckMailbox> OldestPtr;
+	OldestPtr oldestPtr;
+
+	typedef MemorySlot<const int32_t*, OldestPtr> LatestPtr;
+	LatestPtr latestPtr;
+}
 
 #endif /* SHAREDTYPES_H_ */

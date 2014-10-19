@@ -71,12 +71,44 @@ volatile int last_update = 0;
 //dsp::RingBufferStatic<int32_t, 4> outputRing;
 dsp::RingBufferMemory<int32_t, INPUTRINGLEN, SDRAM_BASE_ADDR> inputRing;
 
-const int32_t** inputRingReadPtr = (const int32_t**) 0x2000C000;
 OscillatorParameters current_params = { .e = 0, .level = 0 };
+
+int32_t nextsample0 = 0;
+int32_t nextsample1 = 0;
 
 extern "C"
 void I2S0_IRQHandler(void)
 {
+	LPC_I2S0->TXFIFO = nextsample0;
+	LPC_I2S0->TXFIFO = nextsample1;
+
+	// I2S0 and I2S1 run in sync, so we can check both here
+
+	//int inputFifoLevel0 = (LPC_I2S0->STATE >> 8) & 0xF;
+	//if (inputFifoLevel0 >= 2) {
+		int32_t in0_l = LPC_I2S0->RXFIFO;
+		int32_t in0_r = LPC_I2S0->RXFIFO;
+		inputRing.insert(in0_l);
+		inputRing.insert(in0_r);
+	//}
+
+	//int inputFifoLevel1 = (LPC_I2S1->STATE >> 8) & 0xF;
+	//if (inputFifoLevel1 >= 2) {
+		int32_t in1_l = LPC_I2S1->RXFIFO;
+		int32_t in1_r = LPC_I2S1->RXFIFO;
+		inputRing.insert(in1_l);
+		inputRing.insert(in1_r);
+	//}
+
+	if (inputRing.used() >= INPUTRINGLEN/2+16UL) {
+		inputRing.advance(16);
+	}
+
+	*oldestPtr = inputRing.oldestPtr();
+	*latestPtr = inputRing.latestPtr()+1;
+
+	// then generate next sample
+
 	if (oscMailbox.Read(current_params)) {
 
 		// reset oscillator
@@ -85,49 +117,23 @@ void I2S0_IRQHandler(void)
 		maxlevel = 0.5;
 		maxlevelinv = 2.0;
 	}
-	int outputFifoLevel = (LPC_I2S0->STATE >> 16) & 0xF;
-	if (outputFifoLevel <= 6) {
-		// iterate oscillator
-		float e_local = current_params.e;
-		float gain_local = current_params.level;
-	 	yq = yq - e_local*y;
-		y = e_local*yq + y;
 
-		if (y > maxlevel) {
-			maxlevel = y;
-			maxlevelinv = 1.0 / y;
-		}
+	// iterate oscillator
+	float e_local = current_params.e;
+	float gain_local = current_params.level;
+	yq = yq - e_local*y;
+	y = e_local*yq + y;
 
-		gain_local *= maxlevelinv;
-
-		// write
-		LPC_I2S0->TXFIFO = int32_t(y * gain_local * 2147483648.0);
-		LPC_I2S0->TXFIFO = int32_t(-y * gain_local * 2147483648.0);
+	if (y > maxlevel) {
+		maxlevel = y;
+		maxlevelinv = 1.0 / y;
 	}
 
-	// I2S0 and I2S1 run in sync, so we can check both here
+	gain_local *= maxlevelinv;
 
-	int inputFifoLevel0 = (LPC_I2S0->STATE >> 8) & 0xF;
-	if (inputFifoLevel0 >= 2) {
-		int32_t in_l = LPC_I2S0->RXFIFO;
-		int32_t in_r = LPC_I2S0->RXFIFO;
-		inputRing.insert(in_l);
-		inputRing.insert(in_r);
-	}
-
-	int inputFifoLevel1 = (LPC_I2S1->STATE >> 8) & 0xF;
-	if (inputFifoLevel1 >= 2) {
-		int32_t in_l = LPC_I2S1->RXFIFO;
-		int32_t in_r = LPC_I2S1->RXFIFO;
-		inputRing.insert(in_l);
-		inputRing.insert(in_r);
-	}
-
-	if (inputRing.used() >= INPUTRINGLEN/2+16UL) {
-		inputRing.advance(16);
-	}
-
-	*inputRingReadPtr = inputRing.oldestPtr();
+	// store results
+	nextsample0 = int32_t(y * gain_local * 2147483648.0);
+	nextsample1 = int32_t(-y * gain_local * 2147483648.0);
 }
 
 int main(void) {

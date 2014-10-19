@@ -25,23 +25,33 @@ private:
 		MailboxStatusPending
 	};
 
+	static uint32_t RoundPtr(uint32_t ptr)
+	{
+		if (sizeof(T) < 4) {
+			return (ptr + 3) & ~3;
+		}
+		else {
+			return (ptr + sizeof(T)-1) & ~(sizeof(T)-1);
+		}
+	}
+
 public:
 	IpcMailbox()
 	{
-		volatile MailboxStatus* statusptr = reinterpret_cast<volatile MailboxStatus*> (Memory::EndPtr());
+		volatile MailboxStatus* statusptr = reinterpret_cast<volatile MailboxStatus*> (RoundPtr(Memory::EndPtr()));
 
 		*statusptr = MailboxStatusFree;
 	}
 
 	static uint32_t EndPtr()
 	{
-		return Memory::EndPtr() + sizeof(uint32_t) + sizeof(T);
+		return RoundPtr(Memory::EndPtr() + sizeof(uint32_t)) + RoundPtr(sizeof(T));
 	}
 
 	void Write(const T& data)
 	{
-		volatile MailboxStatus* statusptr = reinterpret_cast<volatile MailboxStatus*> (Memory::EndPtr());
-		T* tptr = reinterpret_cast<T*> (Memory::EndPtr() + sizeof(uint32_t));
+		volatile MailboxStatus* statusptr = reinterpret_cast<volatile MailboxStatus*> (RoundPtr(Memory::EndPtr()));
+		T* tptr = reinterpret_cast<T*> (RoundPtr(Memory::EndPtr() + sizeof(uint32_t)));
 
 		// block if mailbox is reserved
 		while (*statusptr != MailboxStatusFree);
@@ -59,12 +69,12 @@ public:
 
 	bool Read(T& target)
 	{
-		volatile MailboxStatus* statusptr = reinterpret_cast<volatile MailboxStatus*> (Memory::EndPtr());
+		volatile MailboxStatus* statusptr = reinterpret_cast<volatile MailboxStatus*> (RoundPtr(Memory::EndPtr()));
 		if (*statusptr != MailboxStatusPending) {
 			return false;
 		}
 
-		T* tptr = reinterpret_cast<T*> (Memory::EndPtr() + sizeof(uint32_t));
+		T* tptr = reinterpret_cast<T*> (RoundPtr(Memory::EndPtr() + sizeof(uint32_t)));
 		target = *tptr;
 
 		*statusptr = MailboxStatusFree;
@@ -74,7 +84,7 @@ public:
 
 	bool Read()
 	{
-		volatile MailboxStatus* statusptr = reinterpret_cast<volatile MailboxStatus*> (Memory::EndPtr());
+		volatile MailboxStatus* statusptr = reinterpret_cast<volatile MailboxStatus*> (RoundPtr(Memory::EndPtr()));
 		if (*statusptr != MailboxStatusPending) {
 			return false;
 		}

@@ -2,6 +2,7 @@
 #include "resource_manager.h"
 
 #include "cgi/MemoryDumpCgiHandler.h"
+#include "cgi/StreamDumpCgiHandler.h"
 #include "cgi/GeneratorParameterCgiHandler.h"
 #include "CgiCallback.h"
 
@@ -70,21 +71,25 @@ public:
 
 		size_t dirsize = 0;
 		ResEntry* indexEntry = AllocEntry(dirsize, RES_TYPE_FILE, "index.htm");
-		ResEntry* cgiEntry = AllocEntry(dirsize, RES_TYPE_CGI, "memory.raw");
+		ResEntry* memdumpEntry = AllocEntry(dirsize, RES_TYPE_CGI, "memory.raw");
+		ResEntry* streamEntry = AllocEntry(dirsize, RES_TYPE_CGI, "stream.raw");
 		ResEntry* genEntry = AllocEntry(dirsize, RES_TYPE_CGI, "gen");
 		rootHeader->rootEntry.dataStart = ResOffset(indexEntry);
 		rootHeader->rootEntry.dataLength = dirsize;
 
 		AllocDataString(indexEntry, "Hello, world!\n");
-		AllocDataString(cgiEntry, "<!--#execcgi=memory.raw-->");
+		AllocDataString(memdumpEntry, "<!--#execcgi=memory.raw-->");
+		AllocDataString(streamEntry, "<!--#execcgi=stream.raw-->");
 		AllocDataString(genEntry, "<!--#execcgi=gen-->");
 
 		SetCgiHandler("memory.raw", _memdump);
+		SetCgiHandler("stream.raw", _stream);
 		SetCgiHandler("gen", _genparam);
 	}
 
 private:
 	MemoryDumpCgiHandler _memdump;
+	StreamDumpCgiHandler _stream;
 	GeneratorParameterCgiHandler _genparam;
 };
 

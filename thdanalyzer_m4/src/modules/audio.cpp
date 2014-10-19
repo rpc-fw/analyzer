@@ -295,6 +295,12 @@ void Audio::Init()
 
 	audio_waitus(100);
 
+	// feed the dac
+	while (((LPC_I2S0->STATE >> 16) & 0xF) < 8) {
+		LPC_I2S0->TXFIFO = 0.0;
+		LPC_I2S0->TXFIFO = 0.0;
+	}
+
 	AdcEnable();
 	DacEnable();
 }
