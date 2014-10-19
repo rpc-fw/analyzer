@@ -239,11 +239,10 @@ void Audio::I2SSetup()
 
 	// I2S0 interrupt will drive I2S1 also
 	I2S_IRQConfig(LPC_I2S0, I2S_RX_MODE, 2);
-	//I2S_IRQConfig(LPC_I2S0, I2S_TX_MODE, 6);
-	//I2S_IRQConfig(LPC_I2S1, I2S_RX_MODE, 2);
 	I2S_IRQCmd(LPC_I2S0, I2S_RX_MODE, ENABLE);
-	//I2S_IRQCmd(LPC_I2S0, I2S_TX_MODE, ENABLE);
-	//I2S_IRQCmd(LPC_I2S1, I2S_RX_MODE, ENABLE);
+	I2S_IRQCmd(LPC_I2S0, I2S_TX_MODE, DISABLE);
+	I2S_IRQCmd(LPC_I2S1, I2S_RX_MODE, DISABLE);
+	I2S_IRQCmd(LPC_I2S1, I2S_TX_MODE, DISABLE);
 
 	NVIC_SetPriority(I2S0_IRQn, 0);
 	//NVIC_SetPriority(I2S1_IRQn, 0);
@@ -255,6 +254,8 @@ void Audio::I2SSetup()
 
 	I2S_Start(LPC_I2S0);
 	I2S_Start(LPC_I2S1);
+
+	NVIC_ClearPendingIRQ(I2S0_IRQn);
 }
 
 void Audio::AdcEnable()

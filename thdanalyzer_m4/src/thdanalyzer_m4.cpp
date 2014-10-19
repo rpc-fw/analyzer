@@ -84,21 +84,15 @@ void I2S0_IRQHandler(void)
 
 	// I2S0 and I2S1 run in sync, so we can check both here
 
-	//int inputFifoLevel0 = (LPC_I2S0->STATE >> 8) & 0xF;
-	//if (inputFifoLevel0 >= 2) {
-		int32_t in0_l = LPC_I2S0->RXFIFO;
-		int32_t in0_r = LPC_I2S0->RXFIFO;
-		inputRing.insert(in0_l);
-		inputRing.insert(in0_r);
-	//}
+	int32_t in0_l = LPC_I2S0->RXFIFO;
+	int32_t in0_r = LPC_I2S0->RXFIFO;
+	inputRing.insert(in0_l);
+	inputRing.insert(in0_r);
 
-	//int inputFifoLevel1 = (LPC_I2S1->STATE >> 8) & 0xF;
-	//if (inputFifoLevel1 >= 2) {
-		int32_t in1_l = LPC_I2S1->RXFIFO;
-		int32_t in1_r = LPC_I2S1->RXFIFO;
-		inputRing.insert(in1_l);
-		inputRing.insert(in1_r);
-	//}
+	int32_t in1_l = LPC_I2S1->RXFIFO;
+	int32_t in1_r = LPC_I2S1->RXFIFO;
+	inputRing.insert(in1_l);
+	inputRing.insert(in1_r);
 
 	if (inputRing.used() >= INPUTRINGLEN/2+16UL) {
 		inputRing.advance(16);
@@ -156,8 +150,8 @@ int main(void) {
     emc_init();
 	memset((unsigned int*)SDRAM_BASE_ADDR, 0xFF, SDRAM_SIZE_BYTES);
 
+	__disable_irq();
     audio.Init();
-
     __enable_irq();
 
     while(1) {
