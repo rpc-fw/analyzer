@@ -152,7 +152,7 @@
 					<folderInfo id="com.crt.advproject.config.exe.release.660458758." name="/" resourcePath="">
 						<toolChain id="com.crt.advproject.toolchain.exe.release.2142248095" name="Code Red MCU Tools" superClass="com.crt.advproject.toolchain.exe.release">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="com.crt.advproject.platform.exe.release.1904654357" name="ARM-based MCU (Release)" superClass="com.crt.advproject.platform.exe.release"/>
-							<builder buildPath="${workspace_loc:/thdanalyzer_m0}/Release" id="com.crt.advproject.builder.exe.release.1722894407" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="com.crt.advproject.builder.exe.release"/>
+							<builder arguments="-r -j8" buildPath="${workspace_loc:/thdanalyzer_m0}/Release" command="make" id="com.crt.advproject.builder.exe.release.1722894407" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="com.crt.advproject.builder.exe.release"/>
 							<tool id="com.crt.advproject.cpp.exe.release.748930262" name="MCU C++ Compiler" superClass="com.crt.advproject.cpp.exe.release">
 								<option id="com.crt.advproject.cpp.arch.2003100548" name="Architecture" superClass="com.crt.advproject.cpp.arch" value="com.crt.advproject.cpp.target.cm0" valueType="enumerated"/>
 								<option id="com.crt.advproject.cpp.thumb.169583486" name="Thumb mode" superClass="com.crt.advproject.cpp.thumb" value="true" valueType="boolean"/>
@@ -169,7 +169,7 @@
 									<listOptionValue builtIn="false" value="CORE_M0APP"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1555755733" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions" valueType="string"/>
-								<option id="gnu.cpp.compiler.option.optimization.flags.1514834096" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="-Os" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.optimization.flags.1514834096" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="" valueType="string"/>
 								<option id="com.crt.advproject.cpp.hdrlib.1609803627" name="Library headers" superClass="com.crt.advproject.cpp.hdrlib" value="com.crt.advproject.cpp.hdrlib.newlibnano" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1595608012" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_LPC43xx_DriverLib-M0/inc}&quot;"/>
@@ -189,6 +189,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CycloneTCP/devices/lpc43xx}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CycloneTCP/cyclone_tcp/core}&quot;"/>
 								</option>
+								<option id="com.crt.advproject.cpp.exe.release.option.optimization.level.654349774" name="Optimization Level" superClass="com.crt.advproject.cpp.exe.release.option.optimization.level" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
+								<option id="com.crt.advproject.cpp.lto.1867803726" name="Enable Link-time optimization (-flto)" superClass="com.crt.advproject.cpp.lto" value="false" valueType="boolean"/>
 								<inputType id="com.crt.advproject.compiler.cpp.input.640967066" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.release.1117907330" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.release">
@@ -224,6 +226,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CycloneTCP/common}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CycloneTCP/config}&quot;"/>
 								</option>
+								<option id="com.crt.advproject.gcc.exe.release.option.optimization.level.180333155" name="Optimization Level" superClass="com.crt.advproject.gcc.exe.release.option.optimization.level" value="gnu.c.optimization.level.most" valueType="enumerated"/>
+								<option id="com.crt.advproject.gcc.lto.1500500586" name="Enable Link-time optimization (-flto)" superClass="com.crt.advproject.gcc.lto" value="false" valueType="boolean"/>
 								<inputType id="com.crt.advproject.compiler.input.690459607" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gas.exe.release.116871298" name="MCU Assembler" superClass="com.crt.advproject.gas.exe.release">
@@ -257,6 +261,8 @@
 								<option id="com.crt.advproject.link.cpp.stackOffset.699849100" name="Stack offset" superClass="com.crt.advproject.link.cpp.stackOffset" value="256" valueType="string"/>
 								<option id="com.crt.advproject.link.cpp.nanofloat.scanf.1776017364" name="Enable scanf float " superClass="com.crt.advproject.link.cpp.nanofloat.scanf" value="true" valueType="boolean"/>
 								<option id="com.crt.advproject.link.cpp.nanofloat.1483407792" name="Enable printf float " superClass="com.crt.advproject.link.cpp.nanofloat" value="true" valueType="boolean"/>
+								<option id="com.crt.advproject.link.cpp.lto.1200662160" name="Enable Link-time optimization (-flto)" superClass="com.crt.advproject.link.cpp.lto" value="true" valueType="boolean"/>
+								<option id="gnu.cpp.link.option.flags.1482435748" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1786483058" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
