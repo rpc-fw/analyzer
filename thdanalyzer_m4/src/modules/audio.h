@@ -5,6 +5,22 @@ class Audio
 public:
 	void Init();
 
+	int SampleRate() const
+	{
+		switch (_clockmode) {
+		case AUDIO_CLOCK_48000:
+		default:
+			return 48000;
+			break;
+		}
+	}
+
+	float SampleRateFloat() const
+	{
+		// Assume inlining
+		return SampleRate();
+	}
+
 private:
 	void PinSetup();
 	void InMono(bool state);
