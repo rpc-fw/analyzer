@@ -10,6 +10,16 @@ struct GeneratorParameters
 	float level;
 };
 
+struct AnalysisCommand
+{
+	enum CommandType {
+		DONE = 0,
+		BLOCK = 1
+	};
+
+	CommandType commandType;
+};
+
 #include "IpcMailbox.h"
 #include "MemorySlot.h"
 
@@ -22,7 +32,13 @@ namespace {
 	typedef IpcMailbox<bool, CommandMailbox> AckMailbox;
 	AckMailbox ackMailbox;
 
-	typedef MemorySlot<const int32_t*, AckMailbox> OldestPtr;
+	typedef IpcMailbox<AnalysisCommand, AckMailbox> AnalysisCommandMailbox;
+	AnalysisCommandMailbox analysisCommandMailbox;
+
+	typedef IpcMailbox<bool, AnalysisCommandMailbox> AnalysisAckMailbox;
+	AnalysisAckMailbox analysisAckMailbox;
+
+	typedef MemorySlot<const int32_t*, AnalysisAckMailbox> OldestPtr;
 	OldestPtr oldestPtr;
 
 	typedef MemorySlot<const int32_t*, OldestPtr> LatestPtr;

@@ -218,13 +218,13 @@ public:
 	RingRange delayrange(int delay) const {
 		int u = used();
 		if(delay > u) {
-			return RingRange(this->Buffer(), _start, _end, delay - u);
+			return RingRange(this->Buffer(), _start, &_end, delay - u);
 		}
 
 		int curstart = _end - delay;
 		if(curstart < 0)
 			curstart += LEN;
-		return RingRange(this->Buffer(), curstart, _end, 0);
+		return RingRange(this->Buffer(), curstart, &_end, 0);
 	}
 
 	RingRange delayrange(int delay, int length) const {

@@ -76,7 +76,7 @@ int main(void) {
     while (pause_at_main == 0) {}
 #endif
 
-    SystemCoreClock = 204000000;
+    SystemCoreClock = 17*12000000;
 
     // TODO: insert code here
     init_freertos_heap();

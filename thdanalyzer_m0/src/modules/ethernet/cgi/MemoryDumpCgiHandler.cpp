@@ -22,9 +22,9 @@ error_t MemoryDumpCgiHandler::Header(HttpConnection *connection, HttpResponse *r
 error_t MemoryDumpCgiHandler::Request(HttpConnection *connection)
 {
 	const int32_t* startPtr = *oldestPtr;
-	const int32_t bufferend = 16*1048576;
+	const int32_t bufferend = 15*1048576;
 	int32_t startpos = (int32_t)startPtr & 0xFFFFFF;
-	int32_t endpos = startpos + 16*1048576/2;
+	int32_t endpos = startpos + 15*1048576/2;
 
 	int firstpartlen = 0;
 	int secondpartlen = 0;

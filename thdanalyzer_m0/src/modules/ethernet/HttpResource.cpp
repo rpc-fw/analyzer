@@ -4,6 +4,7 @@
 #include "cgi/MemoryDumpCgiHandler.h"
 #include "cgi/StreamDumpCgiHandler.h"
 #include "cgi/GeneratorParameterCgiHandler.h"
+#include "cgi/AnalysisCgiHandler.h"
 #include "CgiCallback.h"
 
 uint8_t res[2048];
@@ -73,6 +74,7 @@ public:
 		ResEntry* indexEntry = AllocEntry(dirsize, RES_TYPE_FILE, "index.htm");
 		ResEntry* memdumpEntry = AllocEntry(dirsize, RES_TYPE_CGI, "memory.raw");
 		ResEntry* streamEntry = AllocEntry(dirsize, RES_TYPE_CGI, "stream.raw");
+		ResEntry* analysisEntry = AllocEntry(dirsize, RES_TYPE_CGI, "analysis.raw");
 		ResEntry* genEntry = AllocEntry(dirsize, RES_TYPE_CGI, "gen");
 		rootHeader->rootEntry.dataStart = ResOffset(indexEntry);
 		rootHeader->rootEntry.dataLength = dirsize;
@@ -80,10 +82,12 @@ public:
 		AllocDataString(indexEntry, "Hello, world!\n");
 		AllocDataString(memdumpEntry, "<!--#execcgi=memory.raw-->");
 		AllocDataString(streamEntry, "<!--#execcgi=stream.raw-->");
+		AllocDataString(analysisEntry, "<!--#execcgi=analysis.raw-->");
 		AllocDataString(genEntry, "<!--#execcgi=gen-->");
 
 		SetCgiHandler("memory.raw", _memdump);
 		SetCgiHandler("stream.raw", _stream);
+		SetCgiHandler("analysis.raw", _analysis);
 		SetCgiHandler("gen", _genparam);
 	}
 
@@ -91,6 +95,7 @@ private:
 	MemoryDumpCgiHandler _memdump;
 	StreamDumpCgiHandler _stream;
 	GeneratorParameterCgiHandler _genparam;
+	AnalysisCgiHandler _analysis;
 };
 
 static HttpResourceManager httpResources;

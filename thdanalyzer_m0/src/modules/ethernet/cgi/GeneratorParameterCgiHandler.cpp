@@ -112,7 +112,7 @@ error_t GeneratorParameterCgiHandler::Request(HttpConnection *connection)
 
 		currentparams.frequency = frequency;
 		commandMailbox.Write(currentparams);
-		ackMailbox.Read();
+		while (!ackMailbox.Read());
 		n = snprintf(reply, sizeof(reply), "Frequency set to %f\n", currentparams.frequency);
 		break;
 	}
@@ -128,7 +128,7 @@ error_t GeneratorParameterCgiHandler::Request(HttpConnection *connection)
 		else if (level < -80.0) level = -80.0;
 		currentparams.level = level;
 		commandMailbox.Write(currentparams);
-		ackMailbox.Read();
+		while (!ackMailbox.Read());
 		n = snprintf(reply, sizeof(reply), "Level set to %f dBu\n", currentparams.level);
 		break;
 	}
