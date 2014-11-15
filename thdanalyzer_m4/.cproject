@@ -43,7 +43,8 @@
 								<option id="gnu.cpp.compiler.option.other.other.1294618461" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fsingle-precision-constant" valueType="string"/>
 								<option id="com.crt.advproject.cpp.hdrlib.2143980562" name="Library headers" superClass="com.crt.advproject.cpp.hdrlib" value="com.crt.advproject.cpp.hdrlib.newlib" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1535297065" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/thdanalyzer_m4/CMSIS_LPC43xx_DriverLib/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_LPC43xx_DriverLib/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/lib}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.cpp.fpu.678374640" name="Floating point" superClass="com.crt.advproject.cpp.fpu" value="com.crt.advproject.cpp.fpu.fpv4" valueType="enumerated"/>
 								<inputType id="com.crt.advproject.compiler.cpp.input.801162883" superClass="com.crt.advproject.compiler.cpp.input"/>
@@ -98,8 +99,12 @@
 									<listOptionValue builtIn="false" value="--gc-sections"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.hdrlib.1474142144" name="Library" superClass="com.crt.advproject.link.cpp.hdrlib" value="com.crt.advproject.cpp.link.hdrlib.newlib.nohost" valueType="enumerated"/>
-								<option id="gnu.cpp.link.option.libs.739416016" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs"/>
-								<option id="gnu.cpp.link.option.paths.1302033917" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths"/>
+								<option id="gnu.cpp.link.option.libs.739416016" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="CMSIS_LPC43xx_DriverLib"/>
+								</option>
+								<option id="gnu.cpp.link.option.paths.1302033917" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_LPC43xx_DriverLib/Release}&quot;"/>
+								</option>
 								<option id="com.crt.advproject.link.cpp.fpu.162391879" name="Floating point" superClass="com.crt.advproject.link.cpp.fpu" value="com.crt.advproject.link.cpp.fpu.fpv4" valueType="enumerated"/>
 								<option id="com.crt.advproject.link.cpp.crpenable.722674485" name="Enable Code Read Protect" superClass="com.crt.advproject.link.cpp.crpenable" value="false" valueType="boolean"/>
 								<option id="com.crt.advproject.link.cpp.multicore.slave.142382802" name="Multicore configuration" superClass="com.crt.advproject.link.cpp.multicore.slave" value="Master" valueType="string"/>
