@@ -23,9 +23,9 @@ FrontPanelControls::Button FrontPanelControls::IdToButton(int buttonid) const
 	case 3:
 		return ButtonBalancedIO;
 	case 4:
-		return ButtonDown;
-	case 5:
 		return ButtonUp;
+	case 5:
+		return ButtonDown;
 	case 6:
 		return ButtonLevelReset;
 	case 7:
