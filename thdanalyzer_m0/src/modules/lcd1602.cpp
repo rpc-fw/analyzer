@@ -6,6 +6,9 @@ extern "C" {
 #include "lpc43xx_scu.h"
 }
 
+#include "freertos.h"
+#include "task.h"
+
 #include "lcd1602.h"
 
 static void delay_us(volatile uint32_t us)
@@ -190,7 +193,9 @@ void LCD1602::Init()
 	// Test code, TODO
 
 	Locate(0, 0);
-	Print("Hello");
+	Print(" ld analyzer b1 ");
+	Locate(0, 1);
+	Print(" analyzer-1     ");
 	//Brightness(true);
 	Contrast(false);
 
@@ -264,16 +269,24 @@ void LCD1602::PinInit()
 
 void LCD1602::Locate(int col, int row)
 {
+	taskENTER_CRITICAL();
+
 	RS(false);
 	DB(0x80 | (row << 6) | col);
 	LCD_DELAY_WRITE;
+
+	taskEXIT_CRITICAL();
 }
 
 void LCD1602::Print(const char* string)
 {
+	taskENTER_CRITICAL();
+
 	RS(true);
 	while (*string) {
 		DB(*string);
 		string++;
 	}
+
+	taskEXIT_CRITICAL();
 }

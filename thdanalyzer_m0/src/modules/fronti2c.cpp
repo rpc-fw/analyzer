@@ -1,3 +1,6 @@
+#include "freertos.h"
+#include "task.h"
+
 #include "lpc43xx_i2c.h"
 #include "fronti2c.h"
 
@@ -9,6 +12,8 @@ void FrontI2C::Init()
 
 bool FrontI2C::Read(uint8_t address, uint8_t* buffer, int count)
 {
+	taskENTER_CRITICAL();
+
 	I2C_M_SETUP_Type setup;
 	Status status;
 
@@ -20,16 +25,16 @@ bool FrontI2C::Read(uint8_t address, uint8_t* buffer, int count)
 	setup.retransmissions_max = 10;
 
 	status = I2C_MasterTransferData(LPC_I2C0, &setup, I2C_TRANSFER_POLLING);
-	if (status != SUCCESS)
-	{
-		return false;
-	}
+    bool result = (status == SUCCESS);
 
-	return true;
+    taskEXIT_CRITICAL();
+	return result;
 }
 
 bool FrontI2C::Write(uint8_t address, uint8_t* buffer, int count)
 {
+	taskENTER_CRITICAL();
+
     I2C_M_SETUP_Type setup;
     Status status;
 
@@ -41,10 +46,8 @@ bool FrontI2C::Write(uint8_t address, uint8_t* buffer, int count)
     setup.retransmissions_max = 10;
 
     status = I2C_MasterTransferData(LPC_I2C0, &setup, I2C_TRANSFER_POLLING);
-    if (status != SUCCESS)
-    {
-    	return false;
-    }
+    bool result = (status == SUCCESS);
 
-    return true;
+    taskEXIT_CRITICAL();
+	return result;
 }

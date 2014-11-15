@@ -16,8 +16,7 @@
 
 // TODO: insert other include files here
 #include "modules/ethernet/EthernetHost.h"
-#include "modules/lcd1602.h"
-#include "modules/frontpanelcontrols.h"
+#include "modules/frontpanel.h"
 
 #include "FreeRTOS/include/freertos.h"
 #include "FreeRTOS/include/task.h"
@@ -28,8 +27,7 @@ uint32_t SystemCoreClock;
 
 // TODO: insert other definitions and declarations here
 EthernetHost ethhost;
-LCD1602 lcd;
-FrontPanelControls frontpanelcontrols;
+FrontPanel frontpanel;
 
 #ifdef DEBUG
 extern "C" void check_failed(uint8_t *file, uint32_t line)
@@ -68,74 +66,12 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName)
 	for( ;; );
 }
 
-void changeled(FrontPanelControls::Led led)
-{
-	static bool ledstate[6] = { };
-
-	ledstate[led] = !ledstate[led];
-	frontpanelcontrols.SetLed(led, ledstate[led]);
-}
-
 void vFrontPanelTask(void* pvParameters)
 {
-	changeled(FrontPanelControls::LedRefLevel4dBu);
-	frontpanelcontrols.SetLed(FrontPanelControls::LedEnable, true);
-
 	while(1) {
-		bool readencoder = false;
+		frontpanel.Update();
 
-		while (true) {
-			bool pressed;
-			FrontPanelControls::Button b = frontpanelcontrols.ReadNextButton(pressed);
-			if (b == FrontPanelControls::ButtonNone) {
-				// out of events
-				break;
-			}
-
-			switch (b) {
-			case FrontPanelControls::ButtonEncoder:
-				readencoder = true;
-				break;
-			case FrontPanelControls::ButtonEnable:
-				frontpanelcontrols.SetLed(FrontPanelControls::LedEnable, pressed);
-				break;
-			case FrontPanelControls::ButtonAuto:
-				if (pressed) {
-					changeled(FrontPanelControls::LedAuto);
-				}
-				break;
-			case FrontPanelControls::ButtonBandwidthLimit:
-				if (pressed) {
-					changeled(FrontPanelControls::LedBandwidthLimit);
-				}
-				break;
-			case FrontPanelControls::ButtonBalancedIO:
-				if (pressed) {
-					changeled(FrontPanelControls::LedBalancedIO);
-				}
-				break;
-			case FrontPanelControls::ButtonCustomLevel:
-				if (pressed) {
-					changeled(FrontPanelControls::LedRefLevelCustom);
-				}
-				break;
-			case FrontPanelControls::ButtonRefLevel:
-				if (pressed) {
-					changeled(FrontPanelControls::LedRefLevel4dBu);
-					changeled(FrontPanelControls::LedRefLevel10dBV);
-				}
-				break;
-			default:
-				break;
-			}
-		}
-
-		if (readencoder) {
-			int gaindelta = frontpanelcontrols.ReadEncoderDelta(FrontPanelControls::EncoderGain);
-			int freqdelta = frontpanelcontrols.ReadEncoderDelta(FrontPanelControls::EncoderFrequency);
-		}
-
-		taskYIELD();
+		vTaskDelay(5);
 	}
 }
 
@@ -143,7 +79,6 @@ void vFrontPanelTask(void* pvParameters)
 void vInitTask(void* pvParameters)
 {
 	ethhost.Init();
-	frontpanelcontrols.Init();
 
     xTaskCreate(vFrontPanelTask, "frontpanel", 512, NULL, 1 /* priority */, NULL);
 
@@ -164,8 +99,7 @@ int main(void) {
     // TODO: insert code here
     init_freertos_heap();
 
-    lcd.Init();
-    frontpanelcontrols.Init();
+    frontpanel.Init();
 
     // Force the counter to be placed into memory
     volatile static int i = 0 ;

@@ -4,8 +4,9 @@
 
 #include "GeneratorParameterCgiHandler.h"
 
-#include "IpcMailbox.h"
-#include "sharedtypes.h"
+#include "../../frontpanel.h"
+
+extern FrontPanel frontpanel;
 
 enum ParameterId
 {
@@ -88,8 +89,6 @@ error_t GeneratorParameterCgiHandler::Header(HttpConnection *connection, HttpRes
 
 const char invalidParameterReply[] = "Invalid parameters\n";
 
-GeneratorParameters currentparams = { .frequency = 1000, .level = 4 };
-
 error_t GeneratorParameterCgiHandler::Request(HttpConnection *connection)
 {
 	ParameterId paramid = ParseRequest(connection->request.uri);
@@ -108,12 +107,10 @@ error_t GeneratorParameterCgiHandler::Request(HttpConnection *connection)
 			return NO_ERROR;
 		}
 		if (frequency > 23000.0) frequency = 23000.0;
-		else if (frequency < -1.0) frequency = 1.0;
+		else if (frequency < 10.0) frequency = 10.0;
 
-		currentparams.frequency = frequency;
-		commandMailbox.Write(currentparams);
-		while (!ackMailbox.Read());
-		n = snprintf(reply, sizeof(reply), "Frequency set to %f\n", currentparams.frequency);
+		frontpanel.SetFrequency(frequency);
+		n = snprintf(reply, sizeof(reply), "Frequency set to %f\n", frequency);
 		break;
 	}
 	case LEVEL:
@@ -126,10 +123,9 @@ error_t GeneratorParameterCgiHandler::Request(HttpConnection *connection)
 		}
 		if (level > 20.0) level = 20.0;
 		else if (level < -80.0) level = -80.0;
-		currentparams.level = level;
-		commandMailbox.Write(currentparams);
-		while (!ackMailbox.Read());
-		n = snprintf(reply, sizeof(reply), "Level set to %f dBu\n", currentparams.level);
+
+		frontpanel.SetLevel(level);
+		n = snprintf(reply, sizeof(reply), "Level set to %f dBu\n", level);
 		break;
 	}
 	default:
