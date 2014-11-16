@@ -23,7 +23,7 @@ error_t StreamDumpCgiHandler::Request(HttpConnection *connection)
 {
 	const int32_t* startptr = *latestPtr;
 	int32_t startpos = (int32_t)startptr & 0xFFFFFF;
-	const int32_t bufferend = 0xF00000;
+	const int32_t bufferend = 0xE00000;
 	const int32_t* bufferptr = (int32_t*)0x28000000;
 
 	static const volatile int32_t* greatestptr = 0;

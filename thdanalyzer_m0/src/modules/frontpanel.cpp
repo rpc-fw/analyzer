@@ -33,16 +33,19 @@ public:
 	void SetMenu(bool menu) { _menu = menu; Refresh(); }
 	bool Menu() const { return _menu; }
 
-	void SetFrequency(float frequency) { _frequency = frequency; Refresh(); }
+	void SetFrequency(float frequency) { _frequency = ValidateFrequency(frequency); Refresh(); }
 	float Frequency() const { return _frequency; }
 
-	void SetLevel(float level) { _level = level; Refresh(); }
+	void SetLevel(float level) { _level = ValidateLevel(level); Refresh(); }
 	float Level() const { return _level; }
 
 	bool NeedRefresh() { bool need = _needrefresh; _needrefresh = false; return need; }
 
 private:
 	void Refresh() { _needrefresh = true; }
+
+	float ValidateFrequency(float frequency);
+	float ValidateLevel(float level);
 
 	bool _menu;
 	bool _needrefresh;
@@ -52,6 +55,41 @@ private:
 
 	bool _enable;
 };
+
+float FrontPanelState::ValidateFrequency(float frequency)
+{
+	if (frequency < 10.0) {
+		return 10.0;
+	}
+	else if (frequency > 23000.0) {
+		return 23000.0;
+	}
+	else if (frequency < 100.0) {
+		frequency = 0.01 * round(frequency * 100.0);
+	}
+	else if (frequency < 1000.0) {
+		frequency = 0.1 * round(frequency * 10.0);
+	}
+	else {
+		frequency = round(frequency);
+	}
+
+	return frequency;
+}
+
+float FrontPanelState::ValidateLevel(float level)
+{
+	if (level < -120.0) {
+		return -120.0;
+	}
+	else if (level > 20.0) {
+		return 20.0;
+	}
+
+	// else
+	level = 0.1 * round(level * 10.0);
+	return level;
+}
 
 void FrontPanel::Init()
 {
@@ -306,45 +344,8 @@ void FrontPanel::FrequencyDown()
 	_state->SetFrequency(frequency * 0.5);
 }
 
-void FrontPanel::ValidateParams()
-{
-	float frequency = _state->Frequency();
-	if (frequency < 10.0) {
-		_state->SetFrequency(10.0);
-	}
-	else if (frequency > 23000.0) {
-		_state->SetFrequency(23000.0);
-	}
-	else if (frequency < 100.0) {
-		frequency = 0.01 * round(frequency * 100.0);
-		_state->SetFrequency(frequency);
-	}
-	else if (frequency < 1000.0) {
-		frequency = 0.1 * round(frequency * 10.0);
-		_state->SetFrequency(frequency);
-	}
-	else {
-		frequency = round(frequency);
-		_state->SetFrequency(frequency);
-	}
-
-	float level = _state->Level();
-	if (level < -120.0) {
-		_state->SetLevel(-120.0);
-	}
-	else if (level > 20.0) {
-		_state->SetLevel(20.0);
-	}
-	else {
-		level = 0.1 * round(level * 10.0);
-		_state->SetLevel(level);
-	}
-}
-
 void FrontPanel::RefreshLcd()
 {
-	ValidateParams();
-
 	frontpanelcontrols.SetLed(FrontPanelControls::LedEnable, _state->Enable());
 
 	float frequency = _state->Frequency();
