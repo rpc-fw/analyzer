@@ -2,10 +2,14 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "freertos.h"
+#include "task.h"
+
 #include "frontpanel.h"
 
 #include "lcd1602.h"
 #include "frontpanelcontrols.h"
+#include "analyzercontrol.h"
 
 #include "IpcMailbox.h"
 #include "sharedtypes.h"
@@ -27,31 +31,43 @@ public:
 		_level = 4;
 	}
 
-	void SetEnable(bool enable) { _enable = enable; Refresh(); }
+	void SetEnable(bool enable) { _enable = enable; Configure(); Refresh(); }
 	bool Enable() const { return _enable; }
 
 	void SetMenu(bool menu) { _menu = menu; Refresh(); }
 	bool Menu() const { return _menu; }
 
-	void SetFrequency(float frequency) { _frequency = ValidateFrequency(frequency); Refresh(); }
+	void SetFrequency(float frequency) { _frequency = ValidateFrequency(frequency); Configure(); Refresh(); }
 	float Frequency() const { return _frequency; }
 
-	void SetLevel(float level) { _level = ValidateLevel(level); Refresh(); }
+	void SetLevel(float level) { _level = ValidateLevel(level); Configure(); Refresh(); }
 	float Level() const { return _level; }
 
+	void SetDistortionFrequency(float frequency) { _distortionfrequency = frequency; Refresh(); }
+	float DistortionFrequency() const { return _distortionfrequency; }
+
+	void SetDistortionLevel(float level) { _distortionlevel = level; Refresh(); }
+	float DistortionLevel() const { return _distortionlevel; }
+
+	bool NeedConfigure() { bool need = _needconfigure; _needconfigure = false; return need; }
 	bool NeedRefresh() { bool need = _needrefresh; _needrefresh = false; return need; }
 
 private:
+	void Configure() { _needconfigure = true; }
 	void Refresh() { _needrefresh = true; }
 
 	float ValidateFrequency(float frequency);
 	float ValidateLevel(float level);
 
 	bool _menu;
+	bool _needconfigure;
 	bool _needrefresh;
 
 	float _frequency;
 	float _level;
+
+	float _distortionfrequency;
+	float _distortionlevel;
 
 	bool _enable;
 };
@@ -101,13 +117,27 @@ void FrontPanel::Init()
     frontpanelcontrols.Init();
 }
 
+void vFrontPanelTask(void* pvParameters)
+{
+	while(1) {
+		frontpanel.Update();
+
+		vTaskDelay(5);
+	}
+}
+
+void FrontPanel::StartTask()
+{
+	xTaskCreate(vFrontPanelTask, "frontpanel", 512, NULL, 1 /* priority */, NULL);
+}
+
 void FrontPanel::Update()
 {
 	bool readencoder = false;
 
 	// avoid processing too many events at once to avoid hanging lcd
 	int maxupdates = _firstupdate ? 100 : 4;
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < maxupdates; i++) {
 		bool pressed;
 		FrontPanelControls::Button b = frontpanelcontrols.ReadNextButton(pressed);
 		if (b == FrontPanelControls::ButtonNone) {
@@ -215,13 +245,25 @@ void FrontPanel::Update()
 		}
 	}
 
-	if (_state->NeedRefresh()) {
-		PostponeConfigure();
-		RefreshLcd();
+	if (_firstupdate) {
+		analyzercontrol.AnalysisStart();
+	}
+	else {
+		if (analyzercontrol.AnalysisAvailable()) {
+			analyzercontrol.AnalysisRead();
+			_state->SetDistortionFrequency(*distortionFrequency);
+			_state->SetDistortionLevel(*distortionLevel);
+			analyzercontrol.AnalysisFinish();
+			analyzercontrol.AnalysisStart();
+		}
 	}
 
-	if (NeedConfigure()) {
+	if (_state->NeedConfigure()) {
 		Configure();
+	}
+
+	if (_state->NeedRefresh()) {
+		RefreshLcd();
 	}
 
 	_firstupdate = false;
@@ -377,28 +419,42 @@ void FrontPanel::RefreshLcd()
 	text[16] = '\0';
 	lcd.Locate(8, 0);
 	lcd.Print(text);
-}
 
-void FrontPanel::PostponeConfigure()
-{
-	_needconfigure = true;
-}
 
-bool FrontPanel::NeedConfigure()
-{
-	return _needconfigure;
+	frequency = _state->DistortionFrequency();
+	level = _state->DistortionLevel();
+	if (frequency < 100) {
+		snprintf(text, 16, "%1.2fHz  ", frequency);
+	}
+	else if (frequency < 1000) {
+		snprintf(text, 16, "%1.1fHz  ", frequency);
+	}
+	else if (frequency < 10000) {
+		snprintf(text, 16, "%1.0f Hz  ", frequency);
+	}
+	else {
+		snprintf(text, 16, "%1.0fHz  ", frequency);
+	}
+	text[16] = '\0';
+	lcd.Locate(0, 1);
+	lcd.Print(text);
+
+	if (level <= -100.0) {
+		snprintf(text, 9, "% 5.0fdBu", level);
+	}
+	else {
+		snprintf(text, 9, "% 5.1fdBu", level);
+	}
+	text[16] = '\0';
+	lcd.Locate(8, 1);
+	lcd.Print(text);
+
 }
 
 void FrontPanel::Configure()
 {
-	if (commandMailbox.CanWrite()) {
-		_needconfigure = false;
-
-		ackMailbox.Read();
-
-		GeneratorParameters currentparams;
-		currentparams.frequency = _state->Frequency();
-		currentparams.level = _state->Enable() ? _state->Level() : -160.0;
-		commandMailbox.Write(currentparams);
-	}
+	GeneratorParameters currentparams;
+	currentparams.frequency = _state->Frequency();
+	currentparams.level = _state->Enable() ? _state->Level() : -160.0;
+	analyzercontrol.SetConfiguration(currentparams);
 }

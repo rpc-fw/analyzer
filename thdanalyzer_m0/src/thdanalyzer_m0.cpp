@@ -17,6 +17,7 @@
 // TODO: insert other include files here
 #include "modules/ethernet/EthernetHost.h"
 #include "modules/frontpanel.h"
+#include "modules/analyzercontrol.h"
 
 #include "FreeRTOS/include/freertos.h"
 #include "FreeRTOS/include/task.h"
@@ -66,21 +67,12 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName)
 	for( ;; );
 }
 
-void vFrontPanelTask(void* pvParameters)
-{
-	while(1) {
-		frontpanel.Update();
-
-		vTaskDelay(5);
-	}
-}
-
 // Main task
 void vInitTask(void* pvParameters)
 {
 	ethhost.Init();
-
-    xTaskCreate(vFrontPanelTask, "frontpanel", 512, NULL, 1 /* priority */, NULL);
+	analyzercontrol.StartTask();
+	frontpanel.StartTask();
 
 	while(1) {
 		taskYIELD();

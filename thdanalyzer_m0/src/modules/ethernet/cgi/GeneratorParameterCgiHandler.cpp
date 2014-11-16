@@ -6,8 +6,6 @@
 
 #include "../../frontpanel.h"
 
-extern FrontPanel frontpanel;
-
 enum ParameterId
 {
 	UNKNOWN = 0,

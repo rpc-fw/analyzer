@@ -11,6 +11,7 @@ public:
 	FrontPanel() : _state(0) {}
 
 	void Init();
+	void StartTask();
 
 	void Update();
 
@@ -41,8 +42,6 @@ private:
 	void ValidateParams();
 	void RefreshLcd();
 
-	void PostponeConfigure();
-	bool NeedConfigure();
 	void Configure();
 
 	FrontPanelState* _state;
@@ -50,5 +49,6 @@ private:
 	bool _needconfigure;
 };
 
+extern FrontPanel frontpanel;
 
 #endif /* FRONTPANEL_H_ */
