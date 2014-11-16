@@ -272,23 +272,37 @@ void SplitInput(float *resignal, float *refiltered, float& signalmean, float& fi
 	filteredmean = float(filteredsum / FFTSIZE);
 }
 
+int frequencyfftbin(float frequency)
+{
+	return round(frequency) * (FFTSIZE / 48000.0);
+}
+
 float fftbinfrequency(int index)
 {
-	return float(index) * 48000.0 / FFTSIZE;
+	return float(index) * (48000.0 / FFTSIZE);
 }
 
 float fftabsvaluedb(float value)
 {
+	if (value <= 0) return -144.4;
 	return 10*log10(value);
 }
 
-void fftabs(float *re, float *im, float& maxvalue, int& maxindex)
+void fftabs(float *re, float *im, int start, int end, float& maxvalue, int& maxindex)
 {
 	// 1/max(abs(f).^2)
 	float scaling_0dBu = 6.303352392838346e-25 / (2.11592368524*2.11592368524);
 	float maxv = 0;
 	int maxi = 0;
-	for (int i = 5; i < FFTSIZE/2+1; i++) {
+
+	if (start < 10) {
+		start = 10;
+	}
+	if (end > FFTSIZE/2) {
+		end = FFTSIZE/2;
+	}
+
+	for (int i = start; i < end; i++) {
 		float a = (re[i] * re[i] + im[i] * im[i]) * scaling_0dBu;
 		re[i] = a;
 		if (a > maxv) {
@@ -317,6 +331,14 @@ void initwindow()
 		fftwindow[i] = w;
 	}
 
+}
+
+template <typename T>
+T min(T a, T b)
+{
+	return a < b
+		   ? a
+		   : b;
 }
 
 int main(void)
@@ -350,6 +372,7 @@ int main(void)
 
     bool disableAnalysis = false;
 
+	GeneratorParameters params;
     while(1) {
 
 		float *fftmem = (float*)(SDRAM_BASE_ADDR + 15*1048576);
@@ -367,16 +390,15 @@ int main(void)
 
 			for (int i = 0; i < FFTSIZE; i++) {
 				float w = fftwindow[i];
-				resignal[i] = (resignal[i] - signalmean) * w;
+				//resignal[i] = (resignal[i] - signalmean) * w;
 				refiltered[i] = (refiltered[i] - filteredmean) * w;
 			}
 			memset(imsignal, 0, FFTSIZE*sizeof(float));
 			memset(imfiltered, 0, FFTSIZE*sizeof(float));
     	}
 
-    	GeneratorParameters newparams;
-    	if (commandMailbox.Read(newparams)) {
-    		oscMailbox.Write(CalculateParameters(newparams.frequency, newparams.level));
+    	if (commandMailbox.Read(params)) {
+    		oscMailbox.Write(CalculateParameters(params.frequency, params.level));
     		ackMailbox.Write(true);
     	}
 
@@ -384,16 +406,18 @@ int main(void)
     	if (analysisCommandMailbox.Read(analysiscmd)) {
     		if (analysiscmd.commandType == AnalysisCommand::BLOCK) {
 
-    			fft(resignal, imsignal, 15);
+    			//fft(resignal, imsignal, 15);
     			fft(refiltered, imfiltered, 15);
 
-    			float signalmaxvalue;
-    			int signalmaxbin;
-    			fftabs(resignal, imsignal, signalmaxvalue, signalmaxbin);
+    			//float signalmaxvalue;
+    			//int signalmaxbin;
+    			//fftabs(resignal, imsignal, signalmaxvalue, signalmaxbin);
 
+    			int startbin = frequencyfftbin(params.frequency);
+    			int endbin = min(startbin * 34, frequencyfftbin(21000.0));
     			float filteredmaxvalue;
     			int filteredmaxbin;
-    			fftabs(refiltered, imfiltered, filteredmaxvalue, filteredmaxbin);
+    			fftabs(refiltered, imfiltered, startbin, endbin, filteredmaxvalue, filteredmaxbin);
 
     			*distortionFrequency = fftbinfrequency(filteredmaxbin);
     			*distortionLevel = fftabsvaluedb(filteredmaxvalue);
