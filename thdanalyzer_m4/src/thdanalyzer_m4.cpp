@@ -188,7 +188,7 @@ struct AudioIrqParameters
 AudioIrqParameters current_params;
 LocalMailbox<AudioIrqParameters> oscMailbox;
 
-#define INPUTRINGLEN ((15*1048576)/4)
+#define INPUTRINGLEN ((14*1048576)/4)
 typedef dsp::RingBufferMemory<int32_t, INPUTRINGLEN, SDRAM_BASE_ADDR> InputRing;
 InputRing inputRing;
 
@@ -272,15 +272,51 @@ void SplitInput(float *resignal, float *refiltered, float& signalmean, float& fi
 	filteredmean = float(filteredsum / FFTSIZE);
 }
 
-void fftabs(float *re, float *im)
+float fftbinfrequency(int index)
+{
+	return float(index) * 48000.0 / FFTSIZE;
+}
+
+float fftabsvaluedb(float value)
+{
+	return 10*log10(value);
+}
+
+void fftabs(float *re, float *im, float& maxvalue, int& maxindex)
 {
 	// 1/max(abs(f).^2)
-	float scaling_0dBu = 6.303352392838346e-25;
-	for (int i = 1; i < FFTSIZE/2+1; i++) {
+	float scaling_0dBu = 6.303352392838346e-25 / (2.11592368524*2.11592368524);
+	float maxv = 0;
+	int maxi = 0;
+	for (int i = 5; i < FFTSIZE/2+1; i++) {
 		float a = (re[i] * re[i] + im[i] * im[i]) * scaling_0dBu;
 		re[i] = a;
+		if (a > maxv) {
+			maxv = a;
+			maxi = i;
+		}
 	}
 	re[0] = 0;
+	maxvalue = maxv;
+	maxindex = maxi;
+}
+
+void initwindow()
+{
+	float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + 65536*4);
+
+	for (int i = 0; i < FFTSIZE; i++) {
+		//float w = 0.5 * (1.0 - cosf(float(i) * (2*M_PI/(FFTSIZE - 1.0))));
+
+		float phase = float(i) * (2*M_PI/(FFTSIZE - 1.0));
+		float w = 1
+				- 1.93 * cosf(phase)
+				+ 1.29 * cosf(2*phase)
+				- 0.388 * cosf(3*phase)
+				+ 0.028 * cosf(4*phase);
+		fftwindow[i] = w;
+	}
+
 }
 
 int main(void)
@@ -303,6 +339,8 @@ int main(void)
     emc_init();
 	memset((unsigned int*)SDRAM_BASE_ADDR, 0xFF, SDRAM_SIZE_BYTES);
 
+	initwindow();
+
 	// Prepare for first I2S interrupt
 	oscMailbox.Write(CalculateParameters(1000.0, 4.0));
 
@@ -319,6 +357,7 @@ int main(void)
 		float *imsignal = &fftmem[1*FFTSIZE];
 		float *refiltered = &fftmem[2*FFTSIZE];
 		float *imfiltered = &fftmem[3*FFTSIZE];
+		float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + 65536*4);
 
     	if (!disableAnalysis) {
 
@@ -327,9 +366,9 @@ int main(void)
     		SplitInput(resignal, refiltered, signalmean, filteredmean);
 
 			for (int i = 0; i < FFTSIZE; i++) {
-				float window = 0.5 * (1.0 - cosf(float(i) * (2*M_PI/(FFTSIZE - 1.0))));
-				resignal[i] = (resignal[i] - signalmean) * window;
-				refiltered[i] = (refiltered[i] - filteredmean) * window;
+				float w = fftwindow[i];
+				resignal[i] = (resignal[i] - signalmean) * w;
+				refiltered[i] = (refiltered[i] - filteredmean) * w;
 			}
 			memset(imsignal, 0, FFTSIZE*sizeof(float));
 			memset(imfiltered, 0, FFTSIZE*sizeof(float));
@@ -348,8 +387,16 @@ int main(void)
     			fft(resignal, imsignal, 15);
     			fft(refiltered, imfiltered, 15);
 
-    			fftabs(resignal, imsignal);
-    			fftabs(refiltered, imfiltered);
+    			float signalmaxvalue;
+    			int signalmaxbin;
+    			fftabs(resignal, imsignal, signalmaxvalue, signalmaxbin);
+
+    			float filteredmaxvalue;
+    			int filteredmaxbin;
+    			fftabs(refiltered, imfiltered, filteredmaxvalue, filteredmaxbin);
+
+    			*distortionFrequency = fftbinfrequency(filteredmaxbin);
+    			*distortionLevel = fftabsvaluedb(filteredmaxvalue);
 
     			disableAnalysis = true;
     		}

@@ -43,6 +43,12 @@ namespace {
 
 	typedef MemorySlot<const int32_t*, OldestPtr> LatestPtr;
 	LatestPtr latestPtr;
+
+	typedef MemorySlot<float, LatestPtr> DistortionLevel;
+	DistortionLevel distortionLevel;
+
+	typedef MemorySlot<float, DistortionLevel> DistortionFrequency;
+	DistortionFrequency distortionFrequency;
 }
 
 #endif /* SHAREDTYPES_H_ */
