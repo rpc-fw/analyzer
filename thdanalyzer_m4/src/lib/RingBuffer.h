@@ -264,6 +264,10 @@ public:
 		_start = _end = 0;
 	}
 
+	void clear() {
+		_start = _end;
+	}
+
 	int used() const {
 		if(_start > _end) {
 			return _end + (LEN - _start);

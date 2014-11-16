@@ -42,6 +42,26 @@ void check_failed(uint8_t *file, uint32_t line)
 
 #include "lib/fft.h"
 
+template <typename T>
+T min(T a, T b)
+{
+	return a < b
+		   ? a
+		   : b;
+}
+
+int msb(unsigned int a)
+{
+	int bits = -1;
+	while (a) {
+		a >>= 1;
+		bits++;
+	}
+
+	return bits;
+}
+
+
 extern "C"
 void SysTick_Handler(void)
 {
@@ -229,6 +249,10 @@ void I2S0_IRQHandler(void)
 	// then generate next sample
 	nextsample0 = Generator(oscstate, current_params.osc, reset);
 	nextsample1 = -nextsample0;
+
+	if (reset) {
+		inputRing.clear();
+	}
 }
 
 AudioIrqParameters CalculateParameters(float frequencyhz, float leveldbu)
@@ -241,16 +265,15 @@ AudioIrqParameters CalculateParameters(float frequencyhz, float leveldbu)
 	return irqparams;
 }
 
-void SplitInput(float *resignal, float *refiltered, float& signalmean, float& filteredmean)
+void SplitInput(float *resignal, float *refiltered, float& signalmean, float& filteredmean, int fftsize)
 {
-#define FFTSIZE 65536
 	__disable_irq();
-	InputRing::RingRange range = inputRing.delayrange(2*FFTSIZE);
+	InputRing::RingRange range = inputRing.delayrange(2*fftsize);
 	__enable_irq();
 
 	int64_t signalsum = 0;
 	int64_t filteredsum = 0;
-	for (int i = 0; i < FFTSIZE; i++) {
+	for (int i = 0; i < fftsize; i++) {
 		int32_t value;
 
 		// get input signal, convert, store
@@ -268,18 +291,18 @@ void SplitInput(float *resignal, float *refiltered, float& signalmean, float& fi
 		range.advance();
 	}
 
-	signalmean = float(signalsum / FFTSIZE);
-	filteredmean = float(filteredsum / FFTSIZE);
+	signalmean = float(signalsum / fftsize);
+	filteredmean = float(filteredsum / fftsize);
 }
 
-int frequencyfftbin(float frequency)
+int frequencyfftbin(float frequency, int fftsize)
 {
-	return round(frequency) * (FFTSIZE / 48000.0);
+	return round(frequency) * (fftsize / 48000.0);
 }
 
-float fftbinfrequency(int index)
+float fftbinfrequency(int index, int fftsize)
 {
-	return float(index) * (48000.0 / FFTSIZE);
+	return float(index) * (48000.0 / fftsize);
 }
 
 float fftabsvaluedb(float value)
@@ -288,19 +311,17 @@ float fftabsvaluedb(float value)
 	return 10*log10(value);
 }
 
-void fftabs(float *re, float *im, int start, int end, float& maxvalue, int& maxindex)
+void fftabs(float *re, float *im, int start, int end, float& maxvalue, int& maxindex, int fftsize)
 {
 	// 1/max(abs(f).^2)
-	float scaling_0dBu = 6.303352392838346e-25 / (2.11592368524*2.11592368524);
+	float scaling_0dBu = ((6.303352392838346e-25 * 65536.0 * 65536.0) / (2.11592368524*2.11592368524)) / (float(fftsize) * float(fftsize));
 	float maxv = 0;
 	int maxi = 0;
 
 	if (start < 10) {
 		start = 10;
 	}
-	if (end > FFTSIZE/2) {
-		end = FFTSIZE/2;
-	}
+	end = min(end, fftsize/2);
 
 	for (int i = start; i < end; i++) {
 		float a = (re[i] * re[i] + im[i] * im[i]) * scaling_0dBu;
@@ -310,35 +331,33 @@ void fftabs(float *re, float *im, int start, int end, float& maxvalue, int& maxi
 			maxi = i;
 		}
 	}
-	re[0] = 0;
+
 	maxvalue = maxv;
 	maxindex = maxi;
 }
 
+#define MAXFFTSIZELOG2 16
+#define MAXFFTSIZE (1 << MAXFFTSIZELOG2)
+
 void initwindow()
 {
-	float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + 65536*4);
+	for (int level = 16; level <= MAXFFTSIZE; level *= 2) {
 
-	for (int i = 0; i < FFTSIZE; i++) {
-		//float w = 0.5 * (1.0 - cosf(float(i) * (2*M_PI/(FFTSIZE - 1.0))));
+		float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + level*4);
+		float phasescale = (2*M_PI/(float(level) - 1.0));
 
-		float phase = float(i) * (2*M_PI/(FFTSIZE - 1.0));
-		float w = 1
-				- 1.93 * cosf(phase)
-				+ 1.29 * cosf(2*phase)
-				- 0.388 * cosf(3*phase)
-				+ 0.028 * cosf(4*phase);
-		fftwindow[i] = w;
+		for (int i = 0; i < level; i++) {
+			//float w = 0.5 * (1.0 - cosf(float(i) * (2*M_PI/(FFTSIZE - 1.0))));
+
+			float phase = float(i) * phasescale;
+			float w = 1
+					- 1.93 * cosf(phase)
+					+ 1.29 * cosf(2*phase)
+					- 0.388 * cosf(3*phase)
+					+ 0.028 * cosf(4*phase);
+			fftwindow[i] = w;
+		}
 	}
-
-}
-
-template <typename T>
-T min(T a, T b)
-{
-	return a < b
-		   ? a
-		   : b;
 }
 
 int main(void)
@@ -372,29 +391,47 @@ int main(void)
 
     bool disableAnalysis = false;
 
+    int fftsize = 4096;
+    int fftsizelog2 = 12;
+
 	GeneratorParameters params;
     while(1) {
 
 		float *fftmem = (float*)(SDRAM_BASE_ADDR + 15*1048576);
-		float *resignal = &fftmem[0*FFTSIZE];
-		float *imsignal = &fftmem[1*FFTSIZE];
-		float *refiltered = &fftmem[2*FFTSIZE];
-		float *imfiltered = &fftmem[3*FFTSIZE];
-		float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + 65536*4);
+		float *resignal = &fftmem[0*MAXFFTSIZE];
+		float *imsignal = &fftmem[1*MAXFFTSIZE];
+		float *refiltered = &fftmem[2*MAXFFTSIZE];
+		float *imfiltered = &fftmem[3*MAXFFTSIZE];
 
-    	if (!disableAnalysis) {
+		int datalen = (inputRing.used() >> 1) - 4800;
+		bool enoughdata = true;
+
+		if (datalen < 16) {
+			enoughdata = false;
+		}
+		else if (!disableAnalysis) {
+
+			enoughdata = true;
+
+    		fftsizelog2 = msb(datalen);
+    		fftsize = 1 << fftsizelog2;
+    		if (fftsize > MAXFFTSIZE) {
+    			fftsize = MAXFFTSIZE;
+    			fftsizelog2 = MAXFFTSIZELOG2;
+    		}
 
     		float signalmean;
     		float filteredmean;
-    		SplitInput(resignal, refiltered, signalmean, filteredmean);
+    		SplitInput(resignal, refiltered, signalmean, filteredmean, fftsize);
 
-			for (int i = 0; i < FFTSIZE; i++) {
+    		float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + fftsize*4);
+			for (int i = 0; i < fftsize; i++) {
 				float w = fftwindow[i];
 				//resignal[i] = (resignal[i] - signalmean) * w;
 				refiltered[i] = (refiltered[i] - filteredmean) * w;
 			}
-			memset(imsignal, 0, FFTSIZE*sizeof(float));
-			memset(imfiltered, 0, FFTSIZE*sizeof(float));
+			memset(imsignal, 0, fftsize*sizeof(float));
+			memset(imfiltered, 0, fftsize*sizeof(float));
     	}
 
     	if (commandMailbox.Read(params)) {
@@ -402,34 +439,35 @@ int main(void)
     		ackMailbox.Write(true);
     	}
 
-    	AnalysisCommand analysiscmd;
-    	if (analysisCommandMailbox.Read(analysiscmd)) {
-    		if (analysiscmd.commandType == AnalysisCommand::BLOCK) {
+    	if (enoughdata) {
+			AnalysisCommand analysiscmd;
+			if (analysisCommandMailbox.Read(analysiscmd)) {
+				if (analysiscmd.commandType == AnalysisCommand::BLOCK) {
 
-    			//fft(resignal, imsignal, 15);
-    			fft(refiltered, imfiltered, 15);
+					//fft(resignal, imsignal, 15);
+					fft(refiltered, imfiltered, fftsizelog2-1);
 
-    			//float signalmaxvalue;
-    			//int signalmaxbin;
-    			//fftabs(resignal, imsignal, signalmaxvalue, signalmaxbin);
+					//float signalmaxvalue;
+					//int signalmaxbin;
+					//fftabs(resignal, imsignal, signalmaxvalue, signalmaxbin);
 
-    			int startbin = frequencyfftbin(params.frequency);
-    			int endbin = min(startbin * 34, frequencyfftbin(21000.0));
-    			float filteredmaxvalue;
-    			int filteredmaxbin;
-    			fftabs(refiltered, imfiltered, startbin, endbin, filteredmaxvalue, filteredmaxbin);
+					int startbin = frequencyfftbin(params.frequency, fftsize);
+					int endbin = min(startbin * 34, frequencyfftbin(21000.0, fftsize));
+					float filteredmaxvalue;
+					int filteredmaxbin;
+					fftabs(refiltered, imfiltered, startbin, endbin, filteredmaxvalue, filteredmaxbin, fftsize);
 
-    			*distortionFrequency = fftbinfrequency(filteredmaxbin);
-    			*distortionLevel = fftabsvaluedb(filteredmaxvalue);
+					*distortionFrequency = fftbinfrequency(filteredmaxbin, fftsize);
+					*distortionLevel = fftabsvaluedb(filteredmaxvalue);
 
-    			disableAnalysis = true;
-    		}
-    		else {
-    			disableAnalysis = false;
-    		}
-        	analysisAckMailbox.Write(true);
+					disableAnalysis = true;
+				}
+				else {
+					disableAnalysis = false;
+				}
+				analysisAckMailbox.Write(true);
+			}
     	}
-
     }
 	return 0;
 }
