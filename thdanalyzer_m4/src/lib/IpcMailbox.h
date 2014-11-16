@@ -48,13 +48,19 @@ public:
 		return RoundPtr(Memory::EndPtr() + sizeof(uint32_t)) + RoundPtr(sizeof(T));
 	}
 
+	bool CanWrite() const
+	{
+		volatile MailboxStatus* const statusptr = reinterpret_cast<volatile MailboxStatus*> (RoundPtr(Memory::EndPtr()));
+		return *statusptr == MailboxStatusFree;
+	}
+
 	void Write(const T& data)
 	{
-		volatile MailboxStatus* statusptr = reinterpret_cast<volatile MailboxStatus*> (RoundPtr(Memory::EndPtr()));
+		volatile MailboxStatus* const statusptr = reinterpret_cast<volatile MailboxStatus*> (RoundPtr(Memory::EndPtr()));
 		T* tptr = reinterpret_cast<T*> (RoundPtr(Memory::EndPtr() + sizeof(uint32_t)));
 
 		// block if mailbox is reserved
-		while (*statusptr != MailboxStatusFree);
+		while (!CanWrite());
 
 		// ok, now it's free
 		*tptr = data;
@@ -67,10 +73,15 @@ public:
 		//__SEV();
 	}
 
+	bool CanRead() const {
+		volatile MailboxStatus* const statusptr = reinterpret_cast<volatile MailboxStatus*> (RoundPtr(Memory::EndPtr()));
+		return *statusptr == MailboxStatusPending;
+	}
+
 	bool Read(T& target)
 	{
-		volatile MailboxStatus* statusptr = reinterpret_cast<volatile MailboxStatus*> (RoundPtr(Memory::EndPtr()));
-		if (*statusptr != MailboxStatusPending) {
+		volatile MailboxStatus* const statusptr = reinterpret_cast<volatile MailboxStatus*> (RoundPtr(Memory::EndPtr()));
+		if (!CanRead()) {
 			return false;
 		}
 
@@ -85,7 +96,7 @@ public:
 	bool Read()
 	{
 		volatile MailboxStatus* statusptr = reinterpret_cast<volatile MailboxStatus*> (RoundPtr(Memory::EndPtr()));
-		if (*statusptr != MailboxStatusPending) {
+		if (!CanRead()) {
 			return false;
 		}
 

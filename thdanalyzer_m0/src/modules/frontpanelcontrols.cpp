@@ -9,6 +9,8 @@ FrontPanelControls::FrontPanelControls()
 void FrontPanelControls::Init()
 {
 	_i2c.Init();
+
+	RequestAll();
 }
 
 FrontPanelControls::Button FrontPanelControls::IdToButton(int buttonid) const
@@ -128,4 +130,13 @@ int FrontPanelControls::ReadEncoderDelta(FrontPanelControls::Encoder encoderid)
 	int delta = _encoderdelta[EncoderToId(encoderid)];
 	_encoderdelta[EncoderToId(encoderid)] = 0;
 	return delta;
+}
+
+void FrontPanelControls::RequestAll()
+{
+	uint8_t buffer[2];
+	buffer[0] = 0xff;
+	buffer[1] = 0xff;
+
+	_i2c.Write(0x10, buffer, sizeof(buffer));
 }

@@ -57,6 +57,8 @@ private:
 	int EncoderToId(Encoder encoder) const;
 	int GetEncoderDelta(Encoder encoderid) const;
 
+	void RequestAll();
+
 	FrontI2C _i2c;
 
 	int32_t _encoderdelta[2];

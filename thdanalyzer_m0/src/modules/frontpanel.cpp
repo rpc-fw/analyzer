@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "frontpanel.h"
 
@@ -54,6 +55,8 @@ private:
 
 void FrontPanel::Init()
 {
+	_firstupdate = true;
+
 	_state = new FrontPanelState;
 
     lcd.Init();
@@ -64,7 +67,9 @@ void FrontPanel::Update()
 {
 	bool readencoder = false;
 
-	while (true) {
+	// avoid processing too many events at once to avoid hanging lcd
+	int maxupdates = _firstupdate ? 100 : 4;
+	for (int i = 0; i < 16; i++) {
 		bool pressed;
 		FrontPanelControls::Button b = frontpanelcontrols.ReadNextButton(pressed);
 		if (b == FrontPanelControls::ButtonNone) {
@@ -173,8 +178,15 @@ void FrontPanel::Update()
 	}
 
 	if (_state->NeedRefresh()) {
+		PostponeConfigure();
 		RefreshLcd();
 	}
+
+	if (NeedConfigure()) {
+		Configure();
+	}
+
+	_firstupdate = false;
 }
 
 void FrontPanel::SetFrequency(float frequency)
@@ -300,16 +312,32 @@ void FrontPanel::ValidateParams()
 	if (frequency < 10.0) {
 		_state->SetFrequency(10.0);
 	}
-	if (frequency > 23000.0) {
+	else if (frequency > 23000.0) {
 		_state->SetFrequency(23000.0);
+	}
+	else if (frequency < 100.0) {
+		frequency = 0.01 * round(frequency * 100.0);
+		_state->SetFrequency(frequency);
+	}
+	else if (frequency < 1000.0) {
+		frequency = 0.1 * round(frequency * 10.0);
+		_state->SetFrequency(frequency);
+	}
+	else {
+		frequency = round(frequency);
+		_state->SetFrequency(frequency);
 	}
 
 	float level = _state->Level();
 	if (level < -120.0) {
 		_state->SetLevel(-120.0);
 	}
-	if (level > 20.0) {
+	else if (level > 20.0) {
 		_state->SetLevel(20.0);
+	}
+	else {
+		level = 0.1 * round(level * 10.0);
+		_state->SetLevel(level);
 	}
 }
 
@@ -321,14 +349,6 @@ void FrontPanel::RefreshLcd()
 
 	float frequency = _state->Frequency();
 	float level = _state->Level();
-
-	GeneratorParameters currentparams;
-	currentparams.frequency = frequency;
-
-	currentparams.level = _state->Enable() ? level : -160.0;
-
-	commandMailbox.Write(currentparams);
-	while (!ackMailbox.Read());
 
 	char text[17];
 	if (frequency < 100) {
@@ -356,4 +376,28 @@ void FrontPanel::RefreshLcd()
 	text[16] = '\0';
 	lcd.Locate(8, 0);
 	lcd.Print(text);
+}
+
+void FrontPanel::PostponeConfigure()
+{
+	_needconfigure = true;
+}
+
+bool FrontPanel::NeedConfigure()
+{
+	return _needconfigure;
+}
+
+void FrontPanel::Configure()
+{
+	if (commandMailbox.CanWrite()) {
+		_needconfigure = false;
+
+		ackMailbox.Read();
+
+		GeneratorParameters currentparams;
+		currentparams.frequency = _state->Frequency();
+		currentparams.level = _state->Enable() ? _state->Level() : -160.0;
+		commandMailbox.Write(currentparams);
+	}
 }

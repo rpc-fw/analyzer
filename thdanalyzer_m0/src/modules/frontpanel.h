@@ -41,7 +41,13 @@ private:
 	void ValidateParams();
 	void RefreshLcd();
 
+	void PostponeConfigure();
+	bool NeedConfigure();
+	void Configure();
+
 	FrontPanelState* _state;
+	bool _firstupdate;
+	bool _needconfigure;
 };
 
 
