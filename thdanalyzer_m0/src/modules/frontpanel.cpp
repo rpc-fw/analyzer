@@ -20,6 +20,12 @@ FrontPanelControls frontpanelcontrols;
 class FrontPanelState
 {
 public:
+	enum RefLevelMode {
+		RefLevel4dBu = 0,
+		RefLevel10dBV,
+		RefLevelCustom
+	};
+
 	FrontPanelState()
 	{
 		_menu = false;
@@ -30,6 +36,7 @@ public:
 
 		_frequency = 1000;
 		_level = 4;
+		_reflevelmode = RefLevel4dBu;
 	}
 
 	void SetEnable(bool enable) { _enable = enable; Configure(); Refresh(); }
@@ -40,6 +47,12 @@ public:
 
 	void SetMenu(bool menu) { _menu = menu; Refresh(); }
 	bool Menu() const { return _menu; }
+
+	void SetRefLevelMode(RefLevelMode mode) { _reflevelmode = mode; Refresh(); }
+	RefLevelMode RefLevelMode() const { return _reflevelmode; }
+
+	void SetCustomRefLevel(float leveldbu) { _refleveldbu = leveldbu; Refresh(); }
+	float CustomRefLevel() const { return _refleveldbu; }
 
 	void SetFrequency(float frequency) { _frequency = ValidateFrequency(frequency); Configure(); Refresh(); }
 	float Frequency() const { return _frequency; }
@@ -75,6 +88,9 @@ private:
 
 	bool _enable;
 	bool _balancedio;
+
+	enum RefLevelMode _reflevelmode;
+	float _refleveldbu;
 };
 
 float FrontPanelState::ValidateFrequency(float frequency)
@@ -314,14 +330,94 @@ void FrontPanel::BalancedIO()
 	_state->SetBalancedIO(!_state->BalancedIO());
 }
 
+const char* FrontPanel::RelativeLevelString() const
+{
+	switch (_state->RefLevelMode()) {
+	case FrontPanelState::RefLevel4dBu:
+		return "dBu";
+	case FrontPanelState::RefLevel10dBV:
+		return "dBV";
+	case FrontPanelState::RefLevelCustom:
+		break;
+	}
+	return "dB";
+}
+
+float FrontPanel::RelativeLevel() const
+{
+	return RelativeLevel(_state->Level());
+}
+
+float FrontPanel::RelativeLevelGain() const
+{
+	switch (_state->RefLevelMode()) {
+	default:
+	case FrontPanelState::RefLevel4dBu:
+		// will return 0
+		break;
+	case FrontPanelState::RefLevel10dBV:
+		return -2.218487499;
+	case FrontPanelState::RefLevelCustom:
+		return -_state->CustomRefLevel();
+	}
+
+	return 0;
+}
+
+float FrontPanel::RelativeLevel(float level) const
+{
+	return level + RelativeLevelGain();
+}
+
+void FrontPanel::SetRelativeLevel(float level)
+{
+	_state->SetLevel(level - RelativeLevelGain());
+}
+
 void FrontPanel::LevelReset()
 {
+	float zero = 0;
 
+	switch (_state->RefLevelMode()) {
+	default:
+	case FrontPanelState::RefLevel4dBu:
+		zero = 4;
+		break;
+	case FrontPanelState::RefLevel10dBV:
+		zero = -10;
+		break;
+	case FrontPanelState::RefLevelCustom:
+		zero = 0;
+		break;
+	}
+
+	if (RelativeLevel() > zero-0.5 && RelativeLevel() < zero+0.5) {
+		SetRelativeLevel(-60.0);
+	}
+	else if (RelativeLevel() > -60.5 && RelativeLevel() < -59.5) {
+		SetRelativeLevel(zero);
+	}
+	else if (RelativeLevel() <= -30) {
+		SetRelativeLevel(-60.0);
+	}
+	else {
+		SetRelativeLevel(zero);
+	}
 }
 
 void FrontPanel::RefLevel()
 {
-
+	switch (_state->RefLevelMode()) {
+	case FrontPanelState::RefLevel4dBu:
+		_state->SetRefLevelMode(FrontPanelState::RefLevel10dBV);
+		break;
+	case FrontPanelState::RefLevel10dBV:
+		_state->SetRefLevelMode(FrontPanelState::RefLevel4dBu);
+		break;
+	case FrontPanelState::RefLevelCustom:
+		_state->SetRefLevelMode(FrontPanelState::RefLevel4dBu);
+		break;
+	}
 }
 
 void FrontPanel::CustomLevel()
@@ -406,8 +502,26 @@ void FrontPanel::RefreshLcd()
 	frontpanelcontrols.SetLed(FrontPanelControls::LedEnable, _state->Enable());
 	frontpanelcontrols.SetLed(FrontPanelControls::LedBalancedIO, _state->BalancedIO());
 
+	switch (_state->RefLevelMode()) {
+	case FrontPanelState::RefLevel4dBu:
+		frontpanelcontrols.SetLed(FrontPanelControls::LedRefLevel4dBu, true);
+		frontpanelcontrols.SetLed(FrontPanelControls::LedRefLevel10dBV, false);
+		frontpanelcontrols.SetLed(FrontPanelControls::LedRefLevelCustom, false);
+		break;
+	case FrontPanelState::RefLevel10dBV:
+		frontpanelcontrols.SetLed(FrontPanelControls::LedRefLevel4dBu, false);
+		frontpanelcontrols.SetLed(FrontPanelControls::LedRefLevel10dBV, true);
+		frontpanelcontrols.SetLed(FrontPanelControls::LedRefLevelCustom, false);
+		break;
+	case FrontPanelState::RefLevelCustom:
+		frontpanelcontrols.SetLed(FrontPanelControls::LedRefLevel4dBu, false);
+		frontpanelcontrols.SetLed(FrontPanelControls::LedRefLevel10dBV, false);
+		frontpanelcontrols.SetLed(FrontPanelControls::LedRefLevelCustom, true);
+		break;
+	}
+
 	float frequency = _state->Frequency();
-	float level = _state->Level();
+	float level = RelativeLevel();
 
 	char text[17];
 	if (frequency < 100) {
@@ -427,10 +541,10 @@ void FrontPanel::RefreshLcd()
 	lcd.Print(text);
 
 	if (level <= -100.0) {
-		snprintf(text, 9, "% 5.0fdBu", level);
+		snprintf(text, 9, "% 5.0f%s", level, RelativeLevelString());
 	}
 	else {
-		snprintf(text, 9, "% 5.1fdBu", level);
+		snprintf(text, 9, "% 5.1f%s", level, RelativeLevelString());
 	}
 	text[16] = '\0';
 	lcd.Locate(8, 0);
@@ -438,7 +552,7 @@ void FrontPanel::RefreshLcd()
 
 
 	frequency = _state->DistortionFrequency();
-	level = _state->DistortionLevel();
+	level = RelativeLevel(_state->DistortionLevel());
 	if (frequency < 100) {
 		snprintf(text, 16, "%1.2fHz  ", frequency);
 	}
@@ -456,10 +570,10 @@ void FrontPanel::RefreshLcd()
 	lcd.Print(text);
 
 	if (level <= -100.0) {
-		snprintf(text, 9, "% 5.0fdBu", level);
+		snprintf(text, 9, "% 5.0f%s", level, RelativeLevelString());
 	}
 	else {
-		snprintf(text, 9, "% 5.1fdBu", level);
+		snprintf(text, 9, "% 5.1f%s", level, RelativeLevelString());
 	}
 	text[16] = '\0';
 	lcd.Locate(8, 1);

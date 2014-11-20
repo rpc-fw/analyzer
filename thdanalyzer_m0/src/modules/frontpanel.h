@@ -44,6 +44,12 @@ private:
 
 	void Configure();
 
+	float RelativeLevelGain() const;
+	const char* RelativeLevelString() const;
+	float RelativeLevel() const;
+	float RelativeLevel(float level) const;
+	void SetRelativeLevel(float level);
+
 	FrontPanelState* _state;
 	bool _firstupdate;
 	bool _needconfigure;
