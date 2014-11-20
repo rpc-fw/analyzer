@@ -26,6 +26,7 @@ public:
 
 		_enable = true;
 		_needrefresh = true;
+		_balancedio = true;
 
 		_frequency = 1000;
 		_level = 4;
@@ -33,6 +34,9 @@ public:
 
 	void SetEnable(bool enable) { _enable = enable; Configure(); Refresh(); }
 	bool Enable() const { return _enable; }
+
+	void SetBalancedIO(bool balancedio) { _balancedio = balancedio; _level = ValidateLevel(_level); Configure(); Refresh(); }
+	bool BalancedIO() const { return _balancedio; }
 
 	void SetMenu(bool menu) { _menu = menu; Refresh(); }
 	bool Menu() const { return _menu; }
@@ -70,6 +74,7 @@ private:
 	float _distortionlevel;
 
 	bool _enable;
+	bool _balancedio;
 };
 
 float FrontPanelState::ValidateFrequency(float frequency)
@@ -95,11 +100,21 @@ float FrontPanelState::ValidateFrequency(float frequency)
 
 float FrontPanelState::ValidateLevel(float level)
 {
-	if (level < -120.0) {
-		return -120.0;
+	if (_balancedio) {
+		if (level < -120.0) {
+			return -120.0;
+		}
+		else if (level > 22.0) {
+			return 22.0;
+		}
 	}
-	else if (level > 20.0) {
-		return 20.0;
+	else {
+		if (level < -120.0) {
+			return -120.0;
+		}
+		else if (level > 16.0) {
+			return 16.0;
+		}
 	}
 
 	// else
@@ -296,7 +311,7 @@ void FrontPanel::BandwidthLimit()
 
 void FrontPanel::BalancedIO()
 {
-
+	_state->SetBalancedIO(!_state->BalancedIO());
 }
 
 void FrontPanel::LevelReset()
@@ -389,6 +404,7 @@ void FrontPanel::FrequencyDown()
 void FrontPanel::RefreshLcd()
 {
 	frontpanelcontrols.SetLed(FrontPanelControls::LedEnable, _state->Enable());
+	frontpanelcontrols.SetLed(FrontPanelControls::LedBalancedIO, _state->BalancedIO());
 
 	float frequency = _state->Frequency();
 	float level = _state->Level();
@@ -454,7 +470,14 @@ void FrontPanel::RefreshLcd()
 void FrontPanel::Configure()
 {
 	GeneratorParameters currentparams;
+	currentparams.balancedio = _state->BalancedIO();
 	currentparams.frequency = _state->Frequency();
-	currentparams.level = _state->Enable() ? _state->Level() : -160.0;
+	if (currentparams.balancedio) {
+		currentparams.level = _state->Enable() ? _state->Level() : -160.0;
+	}
+	else {
+		// unbalanced I/O, add 6dB of gain
+		currentparams.level = _state->Enable() ? (_state->Level() + 6.0) : -160.0;
+	}
 	analyzercontrol.SetConfiguration(currentparams);
 }
