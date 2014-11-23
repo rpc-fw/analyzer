@@ -57,11 +57,11 @@ void LcdView::Refresh()
 	}
 
 	char text[17];
-	AnalyzerFormat::Format(_state->Frequency(), _state->Level(), text, AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeRefRelativeDecibel, _state);
+	AnalyzerFormat::Format(_state->Frequency(), _state->Level(), text, _state->GeneratorFrequencyDisplayMode(), _state->GeneratorLevelDisplayMode(), _state);
 	lcd.Locate(0, 0);
 	lcd.Print(text);
 
-	AnalyzerFormat::Format(_state->DistortionFrequency(), _state->DistortionLevel(), text, AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeRefRelativeDecibel, _state);
+	AnalyzerFormat::Format(_state->DistortionFrequency(), _state->DistortionLevel(), text, _state->DistortionFrequencyDisplayMode(), _state->DistortionLevelDisplayMode(), _state);
 	lcd.Locate(0, 1);
 	lcd.Print(text);
 }

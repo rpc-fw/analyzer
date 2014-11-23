@@ -2,6 +2,7 @@
 #define FRONTPANELSTATE_H_
 
 #include "frontpanelmenu.h"
+#include "analyzerformat.h"
 
 class FrontPanelState
 {
@@ -23,6 +24,13 @@ public:
 		_frequency = 1000;
 		_level = 4;
 		_reflevelmode = RefLevel4dBu;
+
+		_generatorfrequencydisplaymode = AnalyzerFormat::FrequencyDisplayModeHz;
+		_generatorleveldisplaymode = AnalyzerFormat::LevelDisplayModeRefRelativeDecibel;
+		_analyzerfrequencydisplaymode = AnalyzerFormat::FrequencyDisplayModeHz;
+		_analyzerleveldisplaymode = AnalyzerFormat::LevelDisplayModeRefRelativeDecibel;
+		_distortionfrequencydisplaymode = AnalyzerFormat::FrequencyDisplayModeHz;
+		_distortionleveldisplaymode = AnalyzerFormat::LevelDisplayModeGeneratorRelativeDecibel;
 	}
 
 	void SetEnable(bool enable) { _enable = enable; Configure(); Refresh(); }
@@ -54,6 +62,24 @@ public:
 
 	void SetDistortionLevel(float level) { _distortionlevel = level; Refresh(); }
 	float DistortionLevel() const { return _distortionlevel; }
+
+	void SetGeneratorFrequencyDisplayMode(AnalyzerFormat::FrequencyDisplayMode mode) { _generatorfrequencydisplaymode = mode; Refresh(); }
+	AnalyzerFormat::FrequencyDisplayMode GeneratorFrequencyDisplayMode() const { return _generatorfrequencydisplaymode; }
+
+	void SetGeneratorLevelDisplayMode(AnalyzerFormat::LevelDisplayMode mode) { _generatorleveldisplaymode = mode; Refresh(); }
+	AnalyzerFormat::LevelDisplayMode GeneratorLevelDisplayMode() const { return _generatorleveldisplaymode; }
+
+	void SetAnalyzerFrequencyDisplayMode(AnalyzerFormat::FrequencyDisplayMode mode) { _analyzerfrequencydisplaymode = mode; Refresh(); }
+	AnalyzerFormat::FrequencyDisplayMode AnalyzerFrequencyDisplayMode() const { return _analyzerfrequencydisplaymode; }
+
+	void SetAnalyzerLevelDisplayMode(AnalyzerFormat::LevelDisplayMode mode) { _analyzerleveldisplaymode = mode; Refresh(); }
+	AnalyzerFormat::LevelDisplayMode AnalyzerLevelDisplayMode() const { return _analyzerleveldisplaymode; }
+
+	void SetDistortionFrequencyDisplayMode(AnalyzerFormat::FrequencyDisplayMode mode) { _distortionfrequencydisplaymode = mode; Refresh(); }
+	AnalyzerFormat::FrequencyDisplayMode DistortionFrequencyDisplayMode() const { return _distortionfrequencydisplaymode; }
+
+	void SetDistortionLevelDisplayMode(AnalyzerFormat::LevelDisplayMode mode) { _distortionleveldisplaymode = mode; Refresh(); }
+	AnalyzerFormat::LevelDisplayMode DistortionLevelDisplayMode() const { return _distortionleveldisplaymode; }
 
 	const char* RelativeLevelString() const
 	{
@@ -125,6 +151,13 @@ private:
 
 	enum RefLevelMode _reflevelmode;
 	float _refleveldbu;
+
+	AnalyzerFormat::FrequencyDisplayMode _generatorfrequencydisplaymode;
+	AnalyzerFormat::LevelDisplayMode _generatorleveldisplaymode;
+	AnalyzerFormat::FrequencyDisplayMode _analyzerfrequencydisplaymode;
+	AnalyzerFormat::LevelDisplayMode _analyzerleveldisplaymode;
+	AnalyzerFormat::FrequencyDisplayMode _distortionfrequencydisplaymode;
+	AnalyzerFormat::LevelDisplayMode _distortionleveldisplaymode;
 };
 
 #endif /* FRONTPANELSTATE_H_ */

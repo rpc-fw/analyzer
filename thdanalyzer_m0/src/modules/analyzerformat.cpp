@@ -44,6 +44,10 @@ void AnalyzerFormat::Format(float frequency, float leveldBu, char* buffer, Frequ
 	switch (levelmode) {
 	case LevelDisplayModeRefRelativeDecibel:
 		RenderLevelRefDecibel(&buffer[8], 9, state->RelativeLevel(leveldBu), state->RelativeLevelString());
+		break;
+	case LevelDisplayModeGeneratorRelativeDecibel:
+		RenderLevelRefDecibel(&buffer[8], 9, leveldBu - state->Level(), "dB");
+		break;
 	}
 
 	for (int i = 0; i < 16; i++) {
