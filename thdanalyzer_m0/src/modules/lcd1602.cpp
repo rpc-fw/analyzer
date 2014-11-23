@@ -220,12 +220,34 @@ void LCD1602::Init()
 
 	LPC_SCT->CTRL_L &= ~(1 << 2);
 
+	InitFont();
+
 	// Fade in
 	for (int i = 0; i < 100; i++)
 	{
 		LPC_SCT->MATCHREL[1].L = i;
 		delay_ms(10);
 	}
+}
+
+void LCD1602::InitFont()
+{
+	char arrow[] = {0x8,0xc,0xe,0xf,0xe,0xc,0x8};
+
+	taskENTER_CRITICAL();
+
+	RS(false);
+	DB(0x40 | 0x8);
+	LCD_DELAY_WRITE;
+
+	RS(true);
+	for (int i = 0; i < sizeof(arrow); i++) {
+		DB(arrow[i]);
+	}
+
+	Locate(0, 0);
+
+	taskEXIT_CRITICAL();
 }
 
 void LCD1602::PinInit()

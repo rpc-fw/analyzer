@@ -43,6 +43,11 @@ void LcdView::Refresh()
 		FillSpaces(buffer.row1, buffer.Width());
 		FillSpaces(buffer.row2, buffer.Width());
 
+		if (menu.IsSubmenu(_state->MenuEntry())) {
+			buffer.row1[15] = '\1';
+			buffer.row1[16] = '\0';
+		}
+
 		lcd.Locate(0, 0);
 		lcd.Print(buffer.row1);
 		lcd.Locate(0, 1);

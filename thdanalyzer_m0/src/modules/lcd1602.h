@@ -19,6 +19,7 @@ public:
 private:
 
 	void PinInit();
+	void InitFont();
 
 	void Contrast(bool state);
 	void Brightness(bool state);
