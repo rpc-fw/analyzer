@@ -41,6 +41,36 @@ void EthernetHost::Init()
 	InitHttp();
 }
 
+const char* EthernetHost::IpAddress() const
+{
+	static char buf[17];
+	buf[0] = '\0';
+
+	if (gState.interface == 0) {
+		return buf;
+	}
+
+	IpAddr addr;
+	addr.length = 4;
+	addr.ipv4Addr = gState.interface->ipv4Config.addr;
+	ipAddrToString(&addr, buf);
+	return buf;
+}
+
+const char* EthernetHost::HostName() const
+{
+	static char buf[17];
+	buf[0] = '\0';
+
+	if (gState.interface == 0) {
+		return buf;
+	}
+
+	strncpy(buf, gState.interface->hostname, 16);
+	buf[16] = '\0';
+	return buf;
+}
+
 void EthernetHost::InitStack()
 {
 	error_t error;
@@ -139,3 +169,5 @@ void EthernetHost::InitHttp()
    }
 #endif
 }
+
+EthernetHost ethhost;

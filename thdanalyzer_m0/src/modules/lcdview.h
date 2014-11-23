@@ -7,12 +7,9 @@ class LcdView
 {
 public:
 	LcdView();
-	void Init();
+	void Init(FrontPanelState* state);
 
-	void Refresh(FrontPanelState* state);
-
-	void SetState(FrontPanelState* state) { _state = state; }
-
+	void Refresh();
 private:
 	FrontPanelState* _state;
 };

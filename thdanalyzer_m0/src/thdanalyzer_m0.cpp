@@ -27,7 +27,6 @@
 uint32_t SystemCoreClock;
 
 // TODO: insert other definitions and declarations here
-EthernetHost ethhost;
 FrontPanel frontpanel;
 
 #ifdef DEBUG

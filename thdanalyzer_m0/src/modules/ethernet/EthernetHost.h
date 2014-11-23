@@ -11,6 +11,9 @@ public:
 
 	void Init();
 
+	const char* IpAddress() const;
+	const char* HostName() const;
+
 private:
 	void InitStack();
 	void InitDhcp();
@@ -19,5 +22,6 @@ private:
 	EthernetHostState* _state;
 };
 
+extern EthernetHost ethhost;
 
 #endif /* ETHERNET_H_ */

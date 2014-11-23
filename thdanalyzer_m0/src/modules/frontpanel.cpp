@@ -69,8 +69,8 @@ void FrontPanel::Init()
 
 	_state = new FrontPanelState;
 
-	menu.Init();
-    lcdview.Init();
+	menu.Init(_state);
+    lcdview.Init(_state);
     frontpanelcontrols.Init();
 }
 
@@ -221,7 +221,7 @@ void FrontPanel::Update()
 
 	if (_state->NeedRefresh()) {
 		RefreshLeds();
-		lcdview.Refresh(_state);
+		lcdview.Refresh();
 	}
 
 	_firstupdate = false;

@@ -4,6 +4,8 @@
 #include "frontpanelstate.h"
 
 #include "lcd1602.h"
+#include "lcdbuffer.h"
+#include "analyzerformat.h"
 
 LCD1602 lcd;
 LcdView lcdview;
@@ -13,8 +15,9 @@ LcdView::LcdView()
 
 }
 
-void LcdView::Init()
+void LcdView::Init(FrontPanelState* state)
 {
+	_state = state;
 	lcd.Init();
 }
 
@@ -31,10 +34,8 @@ void FillSpaces(char* buffer, int size)
 	buffer[size] = '\0';
 }
 
-void LcdView::Refresh(FrontPanelState* state)
+void LcdView::Refresh()
 {
-	SetState(state);
-
 	if (_state->MenuActive()) {
 		LcdBuffer buffer;
 		menu.MenuRender(_state->MenuEntry(), buffer);
@@ -50,63 +51,12 @@ void LcdView::Refresh(FrontPanelState* state)
 		return;
 	}
 
-	float frequency = _state->Frequency();
-	float level = _state->RelativeLevel();
-
 	char text[17];
-	if (frequency < 100) {
-		snprintf(text, 16, "%1.2fHz  ", frequency);
-	}
-	else if (frequency < 1000) {
-		snprintf(text, 16, "%1.1fHz  ", frequency);
-	}
-	else if (frequency < 10000) {
-		snprintf(text, 16, "%1.0f Hz  ", frequency);
-	}
-	else {
-		snprintf(text, 16, "%1.0fHz  ", frequency);
-	}
-	text[16] = '\0';
+	AnalyzerFormat::Format(_state->Frequency(), _state->Level(), text, AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeRefRelativeDecibel, _state);
 	lcd.Locate(0, 0);
 	lcd.Print(text);
 
-	if (level <= -100.0) {
-		snprintf(text, 9, "% 5.0f%s", level, _state->RelativeLevelString());
-	}
-	else {
-		snprintf(text, 9, "% 5.1f%s", level, _state->RelativeLevelString());
-	}
-	text[16] = '\0';
-	lcd.Locate(8, 0);
-	lcd.Print(text);
-
-	frequency = _state->DistortionFrequency();
-	level = _state->RelativeLevel(_state->DistortionLevel());
-	if (frequency < 100) {
-		snprintf(text, 16, "%1.2fHz  ", frequency);
-	}
-	else if (frequency < 1000) {
-		snprintf(text, 16, "%1.1fHz  ", frequency);
-	}
-	else if (frequency < 10000) {
-		snprintf(text, 16, "%1.0f Hz  ", frequency);
-	}
-	else {
-		snprintf(text, 16, "%1.0fHz  ", frequency);
-	}
-	text[16] = '\0';
+	AnalyzerFormat::Format(_state->DistortionFrequency(), _state->DistortionLevel(), text, AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeRefRelativeDecibel, _state);
 	lcd.Locate(0, 1);
 	lcd.Print(text);
-
-	if (level <= -100.0) {
-		snprintf(text, 9, "% 5.0f%s", level, _state->RelativeLevelString());
-	}
-	else {
-		snprintf(text, 9, "% 5.1f%s", level, _state->RelativeLevelString());
-	}
-	text[16] = '\0';
-	lcd.Locate(8, 1);
-	lcd.Print(text);
-
-	SetState(NULL);
 }

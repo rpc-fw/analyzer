@@ -5,6 +5,7 @@
 FrontPanelMenu menu;
 
 #include "menuentryimpl.h"
+#include "lcdbuffer.h"
 
 namespace {
 	enum MenuEntryTag {
@@ -37,9 +38,9 @@ namespace {
 			ENTRY(TagNone, TagNone, "Meter style", MenuEntryTypeParameterList, DistortionStyleMenuEntry()),
 			ENTRY(TagNone, TagNone, "Generator style", MenuEntryTypeParameterList, GeneratorStyleMenuEntry()),
 			ENTRY(TagNone, TagNone, "Operation mode", MenuEntryTypeParameterList, StringMenuEntry()),
-			ENTRY(TagNone, TagIPNetwork, "IP network", MenuEntryTypeSubmenuTitle, TitleMenuEntry()),
+			ENTRY(TagNone, TagIPNetwork, "IP network", MenuEntryTypeSubmenuTitle, IPAddressEntry()),
 			SENTINEL(),
-			ENTRY(TagIPNetwork, TagNone, "IP address", MenuEntryTypeParameterList, IPAddressEntry()),
+			ENTRY(TagIPNetwork, TagNone, "DHCP name", MenuEntryTypeParameterList, DHCPNameEntry()),
 			SENTINEL(),
 	};
 
@@ -78,8 +79,9 @@ FrontPanelMenu::FrontPanelMenu()
 {
 }
 
-void FrontPanelMenu::Init()
+void FrontPanelMenu::Init(FrontPanelState* state)
 {
+	_state = state;
 	InitMenu(0, -1);
 }
 
@@ -148,10 +150,10 @@ void FrontPanelMenu::MenuRender(MenuEntryId entry, LcdBuffer& screen)
 {
 	strncpy(screen.row1, menudata[entry].name, screen.Width());
 	screen.row2[0] = '\0';
-	menudata[entry].handler.Render(screen);
+	menudata[entry].handler.Render(_state, screen);
 }
 
 void FrontPanelMenu::MenuValueChange(MenuEntryId entry, int delta)
 {
-	menudata[entry].handler.ChangeValue(delta);
+	menudata[entry].handler.ChangeValue(_state, delta);
 }

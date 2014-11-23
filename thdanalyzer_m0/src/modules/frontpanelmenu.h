@@ -1,7 +1,8 @@
 #ifndef FRONTPANELMENU_H_
 #define FRONTPANELMENU_H_
 
-#include "lcdbuffer.h"
+class LcdBuffer;
+class FrontPanelState;
 
 class FrontPanelMenu
 {
@@ -9,7 +10,7 @@ public:
 	typedef int MenuEntryId;
 
 	FrontPanelMenu();
-	void Init();
+	void Init(FrontPanelState* state);
 
 	MenuEntryId Root(MenuEntryId current) const;
 
@@ -23,6 +24,9 @@ public:
 
 	void MenuRender(MenuEntryId entry, LcdBuffer& screen);
 	void MenuValueChange(MenuEntryId entry, int delta);
+
+private:
+	FrontPanelState* _state;
 };
 
 extern FrontPanelMenu menu;
