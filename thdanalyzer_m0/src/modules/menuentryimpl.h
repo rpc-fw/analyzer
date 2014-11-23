@@ -39,6 +39,15 @@ public:
 	virtual void ChangeValue(FrontPanelState* state, int delta) const;
 };
 
+class OperationModeMenuEntry : public IMenuEntry
+{
+public:
+	OperationModeMenuEntry() {}
+
+	virtual void Render(FrontPanelState* state, LcdBuffer& buffer) const;
+	virtual void ChangeValue(FrontPanelState* state, int delta) const;
+};
+
 class StringMenuEntry : public IMenuEntry
 {
 public:

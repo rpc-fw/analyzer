@@ -9,6 +9,7 @@ struct GeneratorParameters
 	float frequency;
 	float level;
 	bool balancedio;
+	bool analysismode;
 };
 
 struct AnalysisCommand

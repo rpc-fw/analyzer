@@ -58,7 +58,7 @@ void RenderLevelRefDecibel(char* text, int len, float level, const char* refleve
 
 void RenderRelativeDecibel(char* text, int len, float level)
 {
-	snprintf(text, len, "% 6.1f%sdB", level);
+	snprintf(text, len, "% 6.1fdB", level);
 }
 
 void RenderRelativePercent(char* text, int len, float level)

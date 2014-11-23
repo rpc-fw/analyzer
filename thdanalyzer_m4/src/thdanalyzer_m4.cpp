@@ -471,7 +471,7 @@ int main(void)
 					float *re;
 					float *im;
 
-					if (0) {
+					if (params.analysismode) {
 						re = resignal;
 						im = imsignal;
 						include_first_harmonic = true;

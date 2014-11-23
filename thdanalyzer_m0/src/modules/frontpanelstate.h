@@ -13,9 +13,16 @@ public:
 		RefLevelCustom
 	};
 
+	enum OperationMode {
+		OperationModeTHD = 0,
+		OperationModeFrequencyAnalysis = 1
+	};
+
 	FrontPanelState()
 	{
 		_menu = false;
+
+		_operationmode = OperationModeTHD;
 
 		_enable = true;
 		_needrefresh = true;
@@ -32,6 +39,9 @@ public:
 		_distortionfrequencydisplaymode = AnalyzerFormat::FrequencyDisplayModeHz;
 		_distortionleveldisplaymode = AnalyzerFormat::LevelDisplayModeGeneratorRelativeDecibel;
 	}
+
+	void SetOperationMode(OperationMode mode) { _operationmode = mode; Configure(); Refresh(); }
+	OperationMode OperationMode() const { return _operationmode; }
 
 	void SetEnable(bool enable) { _enable = enable; Configure(); Refresh(); }
 	bool Enable() const { return _enable; }
@@ -146,6 +156,7 @@ private:
 	float _distortionfrequency;
 	float _distortionlevel;
 
+	enum OperationMode _operationmode;
 	bool _enable;
 	bool _balancedio;
 

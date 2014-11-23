@@ -434,5 +434,6 @@ void FrontPanel::Configure()
 		// unbalanced I/O, add 6dB of gain
 		currentparams.level = _state->Enable() ? (_state->Level() + 6.0) : -160.0;
 	}
+	currentparams.analysismode = _state->OperationMode() == FrontPanelState::OperationModeFrequencyAnalysis;
 	analyzercontrol.SetConfiguration(currentparams);
 }

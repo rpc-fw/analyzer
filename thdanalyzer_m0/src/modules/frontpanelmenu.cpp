@@ -37,7 +37,7 @@ namespace {
 	MenuEntry menudata[] = {
 			ENTRY(TagNone, TagNone, "Meter style", MenuEntryTypeParameterList, DistortionStyleMenuEntry()),
 			ENTRY(TagNone, TagNone, "Generator style", MenuEntryTypeParameterList, GeneratorStyleMenuEntry()),
-			ENTRY(TagNone, TagNone, "Operation mode", MenuEntryTypeParameterList, StringMenuEntry()),
+			ENTRY(TagNone, TagNone, "Operation mode", MenuEntryTypeParameterList, OperationModeMenuEntry()),
 			ENTRY(TagNone, TagIPNetwork, "IP network", MenuEntryTypeSubmenuTitle, IPAddressEntry()),
 			SENTINEL(),
 			ENTRY(TagIPNetwork, TagNone, "DHCP name", MenuEntryTypeParameterList, DHCPNameEntry()),

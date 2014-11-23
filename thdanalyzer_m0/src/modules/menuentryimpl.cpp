@@ -8,9 +8,9 @@
 #include "ethernet/EthernetHost.h"
 #include "analyzerformat.h"
 
-template<typename T, size_t N> T enumselect(T (&entries)[N], T current, int delta)
+template<typename T, size_t N> T enumselect(const T (&entries)[N], const T current, int delta)
 {
-	T* pos = std::find(&entries[0], &entries[N], current);
+	const T* pos = std::find(&entries[0], &entries[N], current);
 	size_t index = pos - &entries[0];
 
 	if (delta > 0) {
@@ -45,31 +45,20 @@ struct FormatPreset {
 	AnalyzerFormat::FrequencyDisplayMode freqmode;
 	AnalyzerFormat::LevelDisplayMode levelmode;
 
-	bool operator==(const FormatPreset& other) {
+	bool operator==(const FormatPreset& other) const {
 		return freqmode == other.freqmode && levelmode == other.levelmode;
 	}
 };
 
 void DistortionStyleMenuEntry::ChangeValue(FrontPanelState* state, int delta) const
 {
-	FormatPreset presets[] = {
+	const static FormatPreset presets[] = {
 			{ AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeRefRelativeDecibel },
 			{ AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeGeneratorRelativeDecibel },
 			{ AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeGeneratorRelativePercent },
 			{ AnalyzerFormat::FrequencyDisplayModeRatio, AnalyzerFormat::LevelDisplayModeRefRelativeDecibel },
 			{ AnalyzerFormat::FrequencyDisplayModeRatio, AnalyzerFormat::LevelDisplayModeGeneratorRelativeDecibel },
 			{ AnalyzerFormat::FrequencyDisplayModeRatio, AnalyzerFormat::LevelDisplayModeGeneratorRelativePercent }
-/*			enum FrequencyDisplayMode {
-				FrequencyDisplayModeHz,
-				FrequencyDisplayModeRatio
-			};
-
-			enum LevelDisplayMode {
-				LevelDisplayModeVoltage,
-				LevelDisplayModeRefRelativeDecibel,
-				LevelDisplayModeGeneratorRelativeDecibel,
-				LevelDisplayModeGeneratorRelativePercent
-			};*/
 	};
 
 	FormatPreset cur = { state->DistortionFrequencyDisplayMode(), state->DistortionLevelDisplayMode() };
@@ -86,7 +75,7 @@ void GeneratorStyleMenuEntry::Render(FrontPanelState* state, LcdBuffer& buffer) 
 
 void GeneratorStyleMenuEntry::ChangeValue(FrontPanelState* state, int delta) const
 {
-	FormatPreset presets[] = {
+	const static FormatPreset presets[] = {
 			{ AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeRefRelativeDecibel },
 			{ AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeVoltage},
 	};
@@ -96,6 +85,28 @@ void GeneratorStyleMenuEntry::ChangeValue(FrontPanelState* state, int delta) con
 
 	state->SetGeneratorFrequencyDisplayMode(p.freqmode);
 	state->SetGeneratorLevelDisplayMode(p.levelmode);
+}
+
+void OperationModeMenuEntry::Render(FrontPanelState* state, LcdBuffer& buffer) const
+{
+	switch (state->OperationMode()) {
+	case FrontPanelState::OperationModeTHD:
+		strncpy(buffer.row2, "THD Analysis", buffer.Width());
+		break;
+	case FrontPanelState::OperationModeFrequencyAnalysis:
+		strncpy(buffer.row2, "Freq.Analysis", buffer.Width());
+		break;
+	}
+}
+
+void OperationModeMenuEntry::ChangeValue(FrontPanelState* state, int delta) const
+{
+	const static enum FrontPanelState::OperationMode presets[] = {
+			FrontPanelState::OperationModeTHD,
+			FrontPanelState::OperationModeFrequencyAnalysis
+	};
+
+	state->SetOperationMode(enumselect(presets, state->OperationMode(), delta));
 }
 
 void StringMenuEntry::Render(FrontPanelState* state, LcdBuffer& buffer) const {}
