@@ -40,7 +40,7 @@ private:
 	void FrequencyDown();
 
 	void ValidateParams();
-	void RefreshLcd();
+	void RefreshLeds();
 
 	void Configure();
 

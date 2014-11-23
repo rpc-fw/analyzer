@@ -1,6 +1,8 @@
 #ifndef LCD1602_H_
 #define LCD1602_H_
 
+#include <stdint.h>
+
 class LCD1602
 {
 public:
