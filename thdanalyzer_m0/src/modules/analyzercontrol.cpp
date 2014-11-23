@@ -16,7 +16,7 @@ void vAnalyzerControlTask(void* pvParameters)
 	while(1) {
 		analyzercontrol.Update();
 
-		vTaskDelay(5);
+		vTaskDelay(1);
 	}
 }
 
@@ -180,6 +180,12 @@ void AnalyzerControl::SetConfiguration(const GeneratorParameters& params)
 
 	_configuration = params;
 	_needconfiguration = true;
+
+	// Interrupt M4 core if it's analyzing
+	if (StateAnalysisRunning) {
+		__DSB();
+		__SEV();
+	}
 
 	taskEXIT_CRITICAL();
 }

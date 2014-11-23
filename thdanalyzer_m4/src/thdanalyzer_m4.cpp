@@ -10,6 +10,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <algorithm>
 
 #ifdef __USE_CMSIS
 #include "LPC43xx.h"
@@ -69,6 +70,13 @@ int msb(unsigned int a)
 	return bits;
 }
 
+extern "C"
+void M0CORE_IRQHandler(void)
+{
+	fft_interrupt();
+	// clear event interrupt
+	LPC_CREG->M0TXEVENT = 0x0;
+}
 
 extern "C"
 void SysTick_Handler(void)
@@ -341,12 +349,20 @@ void fftabs(float *re, float *im, int start, int end, float& maxvalue, int& maxi
 	end = max(1, end);
 	end = min(end, fftsize/2);
 
-	for (int i = start; i < end; i++) {
-		float a = hypotf(re[i], im[i]) * scaling_0dBu;
-		re[i] = a;
-		if (a > maxv) {
-			maxv = a;
-			maxi = i;
+	for (int i = start; i < end; ) {
+		int n = std::min(end - i, 256);
+
+		if (fft_isinterrupted()) {
+			return;
+		}
+
+		for (; n--; i++) {
+			float a = hypotf(re[i], im[i]) * scaling_0dBu;
+			re[i] = a;
+			if (a > maxv) {
+				maxv = a;
+				maxi = i;
+			}
 		}
 	}
 
@@ -404,6 +420,11 @@ int main(void)
 	oscMailbox.Write(CalculateParameters(1000.0, 4.0, true));
 
 	__disable_irq();
+
+	// Enable M0 interrupt
+	NVIC_SetPriority(M0CORE_IRQn, 3);
+	NVIC_EnableIRQ(M0CORE_IRQn);
+
     audio.Init();
     __enable_irq();
 
@@ -411,6 +432,8 @@ int main(void)
 
     int fftsize = 4096;
     int fftsizelog2 = 12;
+	float signalmean = 0.0;
+	float filteredmean = 0.0;
 
 	bool enoughdata = false;
 	GeneratorParameters params;
@@ -431,7 +454,6 @@ int main(void)
 				enoughdata = false;
 			}
 			else {
-
 				enoughdata = true;
 
 				fftsizelog2 = msb(datalen);
@@ -441,31 +463,21 @@ int main(void)
 
 				fftsize = 1 << fftsizelog2;
 
-				float signalmean;
-				float filteredmean;
 				SplitInput(resignal, refiltered, signalmean, filteredmean, fftsize);
-
-				float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + fftsize*4);
-				for (int i = 0; i < fftsize; i++) {
-					float w = fftwindow[i];
-					resignal[i] = (resignal[i] - signalmean) * w;
-					refiltered[i] = (refiltered[i] - filteredmean) * w;
-				}
-				memset(imsignal, 0, fftsize*sizeof(float));
-				memset(imfiltered, 0, fftsize*sizeof(float));
 			}
 
 			if (commandMailbox.Read(params)) {
 				oscMailbox.Write(CalculateParameters(params.frequency, params.level, params.balancedio));
 				ackMailbox.Write(true);
 				enoughdata = false;
+				fft_disableinterrupt();
 			}
 		}
 
-    	if (enoughdata) {
-			AnalysisCommand analysiscmd;
-			if (analysisCommandMailbox.Read(analysiscmd)) {
-				if (analysiscmd.commandType == AnalysisCommand::BLOCK) {
+		AnalysisCommand analysiscmd;
+		if (analysisCommandMailbox.Read(analysiscmd)) {
+			if (analysiscmd.commandType == AnalysisCommand::BLOCK) {
+		    	if (enoughdata) {
 
 					bool include_first_harmonic = false;
 					float *re;
@@ -482,7 +494,26 @@ int main(void)
 						include_first_harmonic = false;
 					}
 
-					fft(re, im, fftsizelog2-1);
+					if (!fft_isinterrupted()) {
+						float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + fftsize*4);
+						for (int i = 0; i < fftsize; i++) {
+							float w = fftwindow[i];
+							resignal[i] = (resignal[i] - signalmean) * w;
+							refiltered[i] = (refiltered[i] - filteredmean) * w;
+						}
+					}
+
+					if (!fft_isinterrupted()) {
+						memset(imsignal, 0, fftsize*sizeof(float));
+					}
+
+					if (!fft_isinterrupted()) {
+						memset(imfiltered, 0, fftsize*sizeof(float));
+					}
+
+					if (!fft_isinterrupted()) {
+						fft(re, im, fftsizelog2-1);
+					}
 
 					int startbin = frequencyfftbin(params.frequency, fftsize);
 					int endbin = min(frequencyfftbin(params.frequency * 34, fftsize), frequencyfftbin(21000.0, fftsize));
@@ -495,18 +526,23 @@ int main(void)
 
 					float filteredmaxvalue;
 					int filteredmaxbin;
-					fftabs(re, im, startbin, endbin, filteredmaxvalue, filteredmaxbin, fftsize);
+					if (!fft_isinterrupted()) {
+						fftabs(re, im, startbin, endbin, filteredmaxvalue, filteredmaxbin, fftsize);
+					}
 
-					*distortionFrequency = fftbinfrequency(filteredmaxbin, fftsize);
-					*distortionLevel = fftabsvaluedb(filteredmaxvalue);
+					if (!fft_isinterrupted()) {
+						*distortionFrequency = fftbinfrequency(filteredmaxbin, fftsize);
+						*distortionLevel = fftabsvaluedb(filteredmaxvalue);
+					}
 
-					disableAnalysis = true;
+					fft_disableinterrupt();
 				}
-				else {
-					disableAnalysis = false;
-				}
-				analysisAckMailbox.Write(true);
+				disableAnalysis = true;
 			}
+			else {
+				disableAnalysis = false;
+			}
+			analysisAckMailbox.Write(true);
     	}
     }
 	return 0;
