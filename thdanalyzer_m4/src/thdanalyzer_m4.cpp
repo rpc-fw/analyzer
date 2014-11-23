@@ -424,7 +424,7 @@ int main(void)
 
 		int extralen = max(int(4 * 48000.0 / params.frequency), 200);
 		int datalen = (inputRing.used() >> 1);
-		int mindatalen = max(int(11 * 48000.0 / params.frequency), 1024);
+		int mindatalen = min(max(int(11 * 48000.0 / params.frequency), 1024), MAXFFTSIZE);
 
 		if (!disableAnalysis) {
 			if (datalen < mindatalen + extralen) {
