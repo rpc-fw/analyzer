@@ -53,6 +53,7 @@ private:
 	FrontPanelState* _state;
 	bool _firstupdate;
 	bool _needconfigure;
+
 };
 
 extern FrontPanel frontpanel;

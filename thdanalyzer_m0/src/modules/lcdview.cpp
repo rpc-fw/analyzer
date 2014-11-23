@@ -6,6 +6,7 @@
 #include "lcd1602.h"
 
 LCD1602 lcd;
+LcdView lcdview;
 
 LcdView::LcdView()
 {
@@ -17,9 +18,37 @@ void LcdView::Init()
 	lcd.Init();
 }
 
+void FillSpaces(char* buffer, int size)
+{
+	for (int i = 0; i < size; i++) {
+		if (buffer[i] == '\0') {
+			while(i < size) {
+				buffer[i] = ' ';
+				i++;
+			}
+		}
+	}
+	buffer[size] = '\0';
+}
+
 void LcdView::Refresh(FrontPanelState* state)
 {
 	SetState(state);
+
+	if (_state->MenuActive()) {
+		LcdBuffer buffer;
+		menu.MenuRender(_state->MenuEntry(), buffer);
+
+		FillSpaces(buffer.row1, buffer.Width());
+		FillSpaces(buffer.row2, buffer.Width());
+
+		lcd.Locate(0, 0);
+		lcd.Print(buffer.row1);
+		lcd.Locate(0, 1);
+		lcd.Print(buffer.row2);
+
+		return;
+	}
 
 	float frequency = _state->Frequency();
 	float level = _state->RelativeLevel();

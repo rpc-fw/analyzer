@@ -1,6 +1,8 @@
 #ifndef FRONTPANELSTATE_H_
 #define FRONTPANELSTATE_H_
 
+#include "frontpanelmenu.h"
+
 class FrontPanelState
 {
 public:
@@ -29,8 +31,11 @@ public:
 	void SetBalancedIO(bool balancedio) { _balancedio = balancedio; _level = ValidateLevel(_level); Configure(); Refresh(); }
 	bool BalancedIO() const { return _balancedio; }
 
-	void SetMenu(bool menu) { _menu = menu; Refresh(); }
-	bool Menu() const { return _menu; }
+	void SetMenuActive(bool menu) { _menu = menu; Refresh(); }
+	bool MenuActive() const { return _menu; }
+
+	void SetMenuEntry(FrontPanelMenu::MenuEntryId entry) { _menuentry = entry; Refresh(); }
+	FrontPanelMenu::MenuEntryId MenuEntry() const { return _menuentry; }
 
 	void SetRefLevelMode(RefLevelMode mode) { _reflevelmode = mode; Refresh(); }
 	RefLevelMode RefLevelMode() const { return _reflevelmode; }
@@ -105,6 +110,7 @@ private:
 	float ValidateLevel(float level);
 
 	bool _menu;
+	FrontPanelMenu::MenuEntryId _menuentry;
 	bool _needconfigure;
 	bool _needrefresh;
 

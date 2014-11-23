@@ -15,7 +15,6 @@
 #include "sharedtypes.h"
 
 FrontPanelControls frontpanelcontrols;
-LcdView lcdview;
 
 #include "frontpanelstate.h"
 
@@ -70,6 +69,7 @@ void FrontPanel::Init()
 
 	_state = new FrontPanelState;
 
+	menu.Init();
     lcdview.Init();
     frontpanelcontrols.Init();
 }
@@ -111,7 +111,7 @@ void FrontPanel::Update()
 			break;
 		case FrontPanelControls::ButtonAuto:
 			if (pressed) {
-				if (_state->Menu()) {
+				if (_state->MenuActive()) {
 					Cancel();
 				}
 				else {
@@ -121,7 +121,7 @@ void FrontPanel::Update()
 			break;
 		case FrontPanelControls::ButtonMenu:
 			if (pressed) {
-				if (_state->Menu()) {
+				if (_state->MenuActive()) {
 					Ok();
 				}
 				else {
@@ -141,7 +141,7 @@ void FrontPanel::Update()
 			break;
 		case FrontPanelControls::ButtonUp:
 			if (pressed) {
-				if (_state->Menu()) {
+				if (_state->MenuActive()) {
 					MoveMenuAdjust(-1);
 				}
 				else {
@@ -151,7 +151,7 @@ void FrontPanel::Update()
 			break;
 		case FrontPanelControls::ButtonDown:
 			if (pressed) {
-				if (_state->Menu()) {
+				if (_state->MenuActive()) {
 					MoveMenuAdjust(1);
 				}
 				else {
@@ -183,7 +183,7 @@ void FrontPanel::Update()
 		int32_t gaindelta = frontpanelcontrols.ReadEncoderDelta(FrontPanelControls::EncoderGain);
 		int32_t freqdelta = frontpanelcontrols.ReadEncoderDelta(FrontPanelControls::EncoderFrequency);
 
-		if (_state->Menu()) {
+		if (_state->MenuActive()) {
 			if (gaindelta) {
 				MoveMenuSelect(gaindelta);
 			}
@@ -244,7 +244,8 @@ void FrontPanel::Auto()
 
 void FrontPanel::Menu()
 {
-
+	_state->SetMenuEntry(0);
+	_state->SetMenuActive(true);
 }
 
 void FrontPanel::BandwidthLimit()
@@ -310,22 +311,39 @@ void FrontPanel::CustomLevel()
 
 void FrontPanel::MoveMenuSelect(int32_t delta)
 {
-
+	if (delta > 0) {
+		while (delta--) {
+			_state->SetMenuEntry(menu.Next(_state->MenuEntry()));
+		}
+	}
+	else if (delta < 0) {
+		while (delta++) {
+			_state->SetMenuEntry(menu.Prev(_state->MenuEntry()));
+		}
+	}
 }
 
 void FrontPanel::MoveMenuAdjust(int32_t delta)
 {
-
+	menu.MenuValueChange(_state->MenuEntry(), delta);
 }
 
 void FrontPanel::Ok()
 {
-
+	if (menu.IsSubmenu(_state->MenuEntry())) {
+		_state->SetMenuEntry(menu.EnterSubmenu(_state->MenuEntry()));
+	}
+	else {
+		_state->SetMenuActive(false);
+	}
 }
 
 void FrontPanel::Cancel()
 {
-
+	if (menu.IsChild(_state->MenuEntry())) {
+		_state->SetMenuEntry(menu.Back(_state->MenuEntry()));
+	}
+	_state->SetMenuActive(false);
 }
 
 void FrontPanel::MoveGain(int32_t delta)

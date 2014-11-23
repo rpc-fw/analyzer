@@ -17,4 +17,6 @@ private:
 	FrontPanelState* _state;
 };
 
+extern LcdView lcdview;
+
 #endif /* LCDVIEW_H_ */
