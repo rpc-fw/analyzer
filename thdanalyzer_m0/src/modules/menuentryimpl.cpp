@@ -54,7 +54,11 @@ void DistortionStyleMenuEntry::ChangeValue(FrontPanelState* state, int delta) co
 {
 	FormatPreset presets[] = {
 			{ AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeRefRelativeDecibel },
-			{ AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeGeneratorRelativeDecibel }
+			{ AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeGeneratorRelativeDecibel },
+			{ AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeGeneratorRelativePercent },
+			{ AnalyzerFormat::FrequencyDisplayModeRatio, AnalyzerFormat::LevelDisplayModeRefRelativeDecibel },
+			{ AnalyzerFormat::FrequencyDisplayModeRatio, AnalyzerFormat::LevelDisplayModeGeneratorRelativeDecibel },
+			{ AnalyzerFormat::FrequencyDisplayModeRatio, AnalyzerFormat::LevelDisplayModeGeneratorRelativePercent }
 /*			enum FrequencyDisplayMode {
 				FrequencyDisplayModeHz,
 				FrequencyDisplayModeRatio
@@ -77,9 +81,22 @@ void DistortionStyleMenuEntry::ChangeValue(FrontPanelState* state, int delta) co
 
 void GeneratorStyleMenuEntry::Render(FrontPanelState* state, LcdBuffer& buffer) const
 {
-	AnalyzerFormat::Format(state->Frequency(), state->Level(), buffer.row2, AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeRefRelativeDecibel, state);
+	AnalyzerFormat::Format(state->Frequency(), state->Level(), buffer.row2, state->GeneratorFrequencyDisplayMode(), state->GeneratorLevelDisplayMode(), state);
 }
-void GeneratorStyleMenuEntry::ChangeValue(FrontPanelState* state, int delta) const {}
+
+void GeneratorStyleMenuEntry::ChangeValue(FrontPanelState* state, int delta) const
+{
+	FormatPreset presets[] = {
+			{ AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeRefRelativeDecibel },
+			{ AnalyzerFormat::FrequencyDisplayModeHz, AnalyzerFormat::LevelDisplayModeVoltage},
+	};
+
+	FormatPreset cur = { state->GeneratorFrequencyDisplayMode(), state->GeneratorLevelDisplayMode() };
+	FormatPreset p = enumselect(presets, cur, delta);
+
+	state->SetGeneratorFrequencyDisplayMode(p.freqmode);
+	state->SetGeneratorLevelDisplayMode(p.levelmode);
+}
 
 void StringMenuEntry::Render(FrontPanelState* state, LcdBuffer& buffer) const {}
 void StringMenuEntry::ChangeValue(FrontPanelState* state, int delta) const {}
