@@ -65,14 +65,27 @@ void RenderRelativePercent(char* text, int len, float level)
 {
 	const float ln10 = 2.30258509299;
 	float p = 100.0 * expf(level * (1.0 / 20.0) * ln10);
-	if (p > 99.9) {
-		p = 99.9;
+
+	if (p >= 1000.0) {
+		snprintf(text, len, "%7.1f%%", p);
 	}
-	if (p <= 1.0) {
-		snprintf(text, len, "%7.5f%%", p);
+	else if (p >= 100.0) {
+		snprintf(text, len, "%7.1f%%", p);
+	}
+	else if (p >= 10.0) {
+		snprintf(text, len, "%7.1f%%", p);
+	}
+	else if (p >= 1.0) {
+		snprintf(text, len, "%7.2f%%", p);
+	}
+	else if (p >= 0.1) {
+		snprintf(text, len, "%7.3f%%", p);
+	}
+	else if (p >= 0.01) {
+		snprintf(text, len, "%7.4f%%", p);
 	}
 	else {
-		snprintf(text, len, "% 7.4f%%", p);
+		snprintf(text, len, "%7.5f%%", p);
 	}
 }
 
