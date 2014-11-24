@@ -2,7 +2,7 @@
 
 namespace {
 
-	static bool fftinterrupted = false;
+	static volatile bool fftinterrupted = false;
 
 	float coeffcos[] = { -1.000000000000000, 0.000000000000000, 0.707106769084930,
 			0.923879504203796, 0.980785250663757, 0.995184719562531,
