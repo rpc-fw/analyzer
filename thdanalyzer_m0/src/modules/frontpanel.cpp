@@ -425,15 +425,15 @@ void FrontPanel::RefreshLeds()
 void FrontPanel::Configure()
 {
 	GeneratorParameters currentparams;
-	currentparams.balancedio = _state->BalancedIO();
-	currentparams.frequency = _state->Frequency();
-	if (currentparams.balancedio) {
-		currentparams.level = _state->Enable() ? _state->Level() : -160.0;
+	currentparams._balancedio = _state->BalancedIO();
+	currentparams._frequency = _state->Frequency();
+	if (currentparams._balancedio) {
+		currentparams._level = _state->Enable() ? _state->Level() : -160.0;
 	}
 	else {
 		// unbalanced I/O, add 6dB of gain
-		currentparams.level = _state->Enable() ? (_state->Level() + 6.0) : -160.0;
+		currentparams._level = _state->Enable() ? (_state->Level() + 6.0) : -160.0;
 	}
-	currentparams.analysismode = _state->OperationMode() == FrontPanelState::OperationModeFrequencyAnalysis;
+	currentparams._analysismode = _state->OperationMode() == FrontPanelState::OperationModeFrequencyAnalysis;
 	analyzercontrol.SetConfiguration(currentparams);
 }

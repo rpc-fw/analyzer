@@ -290,7 +290,57 @@ AudioIrqParameters CalculateParameters(float frequencyhz, float leveldbu, bool b
 	return irqparams;
 }
 
-void SplitInput(float *resignal, float *refiltered, float& signalmean, float& filteredmean, int fftsize)
+class Analyzer
+{
+public:
+	void Init() {
+		initwindow();
+	    fftsize = 4096;
+	    fftsizelog2 = 12;
+		signalmean = 0.0;
+		filteredmean = 0.0;
+
+		enoughdata = false;
+		resultready = false;
+	}
+
+	int frequencyfftbin(float frequency, int fftsize)
+	{
+		return roundf(frequency) * (fftsize / 48000.0);
+	}
+
+	float fftbinfrequency(int index, int fftsize)
+	{
+		return float(index) * (48000.0 / fftsize);
+	}
+
+	float fftabsvaluedb(float value)
+	{
+		if (value <= 0) return -144.4;
+		return 20*log10f(value);
+	}
+
+	void Refresh();
+	bool Update(float frequency);
+	void Process(float frequency, bool mode);
+	void Finish();
+
+private:
+	void SplitInput(float *resignal, float *refiltered, float& signalmean, float& filteredmean, int fftsize);
+	void fftabs(float *re, float *im, int start, int end, float& maxvalue, int& maxindex, int fftsize);
+	void initwindow();
+
+
+    int fftsize;
+    int fftsizelog2;
+	float signalmean;
+	float filteredmean;
+
+	bool enoughdata;
+	bool resultready;
+};
+
+void Analyzer::SplitInput(float *resignal, float *refiltered, float& signalmean, float& filteredmean, int fftsize)
 {
 	__disable_irq();
 	InputRing::RingRange range = inputRing.delayrange(2*fftsize);
@@ -320,23 +370,7 @@ void SplitInput(float *resignal, float *refiltered, float& signalmean, float& fi
 	filteredmean = float(filteredsum / fftsize);
 }
 
-int frequencyfftbin(float frequency, int fftsize)
-{
-	return roundf(frequency) * (fftsize / 48000.0);
-}
-
-float fftbinfrequency(int index, int fftsize)
-{
-	return float(index) * (48000.0 / fftsize);
-}
-
-float fftabsvaluedb(float value)
-{
-	if (value <= 0) return -144.4;
-	return 20*log10f(value);
-}
-
-void fftabs(float *re, float *im, int start, int end, float& maxvalue, int& maxindex, int fftsize)
+void Analyzer::fftabs(float *re, float *im, int start, int end, float& maxvalue, int& maxindex, int fftsize)
 {
 	//float scaling_0dBu = sqrt((6.303352392838346e-25 * 65536.0 * 65536.0) / (2.11592368524*2.11592368524)) / float(fftsize);
 	float scaling_0dBu = 2.43089234e-8 / float(fftsize);
@@ -373,7 +407,7 @@ void fftabs(float *re, float *im, int start, int end, float& maxvalue, int& maxi
 #define MAXFFTSIZELOG2 16
 #define MAXFFTSIZE (1 << MAXFFTSIZELOG2)
 
-void initwindow()
+void Analyzer::initwindow()
 {
 	for (int level = 16; level <= MAXFFTSIZE; level *= 2) {
 
@@ -394,8 +428,124 @@ void initwindow()
 	}
 }
 
+void Analyzer::Refresh()
+{
+	enoughdata = false;
+	fft_disableinterrupt();
+}
+
+bool Analyzer::Update(float frequency)
+{
+	float *fftmem = (float*)(SDRAM_BASE_ADDR + 15*1048576);
+	float *resignal = &fftmem[0*MAXFFTSIZE];
+	float *imsignal = &fftmem[1*MAXFFTSIZE];
+	float *refiltered = &fftmem[2*MAXFFTSIZE];
+	float *imfiltered = &fftmem[3*MAXFFTSIZE];
+
+	int extralen = max(int(4 * 48000.0 / frequency), 200);
+	int datalen = (inputRing.used() >> 1);
+	int mindatalen = min(max(int(11 * 48000.0 / frequency), 1024), MAXFFTSIZE);
+
+	if (!resultready) {
+		if (datalen < mindatalen + extralen) {
+			enoughdata = false;
+		}
+		else {
+			enoughdata = true;
+
+			fftsizelog2 = msb(datalen);
+			if (fftsizelog2 > MAXFFTSIZELOG2) {
+				fftsizelog2 = MAXFFTSIZELOG2;
+			}
+
+			fftsize = 1 << fftsizelog2;
+
+			SplitInput(resignal, refiltered, signalmean, filteredmean, fftsize);
+		}
+	}
+
+	return !resultready;
+}
+
+void Analyzer::Process(float frequency, bool mode)
+{
+	float *fftmem = (float*)(SDRAM_BASE_ADDR + 15*1048576);
+	float *resignal = &fftmem[0*MAXFFTSIZE];
+	float *imsignal = &fftmem[1*MAXFFTSIZE];
+	float *refiltered = &fftmem[2*MAXFFTSIZE];
+	float *imfiltered = &fftmem[3*MAXFFTSIZE];
+
+	if (enoughdata) {
+		bool include_first_harmonic = false;
+		float *re;
+		float *im;
+
+		if (mode) {
+			re = resignal;
+			im = imsignal;
+			include_first_harmonic = true;
+		}
+		else {
+			re = refiltered;
+			im = imfiltered;
+			include_first_harmonic = false;
+		}
+
+		if (!fft_isinterrupted()) {
+			float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + fftsize*4);
+			for (int i = 0; i < fftsize; i++) {
+				float w = fftwindow[i];
+				resignal[i] = (resignal[i] - signalmean) * w;
+				refiltered[i] = (refiltered[i] - filteredmean) * w;
+			}
+		}
+
+		if (!fft_isinterrupted()) {
+			memset(imsignal, 0, fftsize*sizeof(float));
+		}
+
+		if (!fft_isinterrupted()) {
+			memset(imfiltered, 0, fftsize*sizeof(float));
+		}
+
+		if (!fft_isinterrupted()) {
+			fft(re, im, fftsizelog2-1);
+		}
+
+		int startbin = frequencyfftbin(frequency, fftsize);
+		int endbin = min(frequencyfftbin(frequency * 34, fftsize), frequencyfftbin(21000.0, fftsize));
+
+		if (include_first_harmonic) {
+			startbin -= 10;
+		} else {
+			startbin += 10;
+		}
+
+		float filteredmaxvalue;
+		int filteredmaxbin;
+		if (!fft_isinterrupted()) {
+			fftabs(re, im, startbin, endbin, filteredmaxvalue, filteredmaxbin, fftsize);
+		}
+
+		if (!fft_isinterrupted()) {
+			*distortionFrequency = fftbinfrequency(filteredmaxbin, fftsize);
+			*distortionLevel = fftabsvaluedb(filteredmaxvalue);
+		}
+
+		fft_disableinterrupt();
+	}
+	resultready = true;
+}
+
+void Analyzer::Finish()
+{
+	resultready = false;
+}
+
 int main(void)
 {
+	Analyzer analyzer;
+
 	const int clock_multiplier = 17;
     CGU_Init(clock_multiplier);
     SystemCoreClock = clock_multiplier*12000000;
@@ -414,9 +564,10 @@ int main(void)
     emc_init();
 	memset((unsigned int*)SDRAM_BASE_ADDR, 0xFF, SDRAM_SIZE_BYTES);
 
-	initwindow();
+	analyzer.Init();
 
 	// Prepare for first I2S interrupt
+    GeneratorParameters params = GeneratorParameters(1000.0, 4.0, true, false);
 	oscMailbox.Write(CalculateParameters(1000.0, 4.0, true));
 
 	__disable_irq();
@@ -428,119 +579,23 @@ int main(void)
     audio.Init();
     __enable_irq();
 
-    bool disableAnalysis = false;
-
-    int fftsize = 4096;
-    int fftsizelog2 = 12;
-	float signalmean = 0.0;
-	float filteredmean = 0.0;
-
-	bool enoughdata = false;
-	GeneratorParameters params;
     while(1) {
 
-		float *fftmem = (float*)(SDRAM_BASE_ADDR + 15*1048576);
-		float *resignal = &fftmem[0*MAXFFTSIZE];
-		float *imsignal = &fftmem[1*MAXFFTSIZE];
-		float *refiltered = &fftmem[2*MAXFFTSIZE];
-		float *imfiltered = &fftmem[3*MAXFFTSIZE];
-
-		int extralen = max(int(4 * 48000.0 / params.frequency), 200);
-		int datalen = (inputRing.used() >> 1);
-		int mindatalen = min(max(int(11 * 48000.0 / params.frequency), 1024), MAXFFTSIZE);
-
-		if (!disableAnalysis) {
-			if (datalen < mindatalen + extralen) {
-				enoughdata = false;
-			}
-			else {
-				enoughdata = true;
-
-				fftsizelog2 = msb(datalen);
-				if (fftsizelog2 > MAXFFTSIZELOG2) {
-					fftsizelog2 = MAXFFTSIZELOG2;
-				}
-
-				fftsize = 1 << fftsizelog2;
-
-				SplitInput(resignal, refiltered, signalmean, filteredmean, fftsize);
-			}
-
+    	if (analyzer.Update(params._frequency)) {
 			if (commandMailbox.Read(params)) {
-				oscMailbox.Write(CalculateParameters(params.frequency, params.level, params.balancedio));
+				oscMailbox.Write(CalculateParameters(params._frequency, params._level, params._balancedio));
 				ackMailbox.Write(true);
-				enoughdata = false;
-				fft_disableinterrupt();
+				analyzer.Refresh();
 			}
-		}
+    	}
 
 		AnalysisCommand analysiscmd;
 		if (analysisCommandMailbox.Read(analysiscmd)) {
 			if (analysiscmd.commandType == AnalysisCommand::BLOCK) {
-		    	if (enoughdata) {
-
-					bool include_first_harmonic = false;
-					float *re;
-					float *im;
-
-					if (params.analysismode) {
-						re = resignal;
-						im = imsignal;
-						include_first_harmonic = true;
-					}
-					else {
-						re = refiltered;
-						im = imfiltered;
-						include_first_harmonic = false;
-					}
-
-					if (!fft_isinterrupted()) {
-						float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + fftsize*4);
-						for (int i = 0; i < fftsize; i++) {
-							float w = fftwindow[i];
-							resignal[i] = (resignal[i] - signalmean) * w;
-							refiltered[i] = (refiltered[i] - filteredmean) * w;
-						}
-					}
-
-					if (!fft_isinterrupted()) {
-						memset(imsignal, 0, fftsize*sizeof(float));
-					}
-
-					if (!fft_isinterrupted()) {
-						memset(imfiltered, 0, fftsize*sizeof(float));
-					}
-
-					if (!fft_isinterrupted()) {
-						fft(re, im, fftsizelog2-1);
-					}
-
-					int startbin = frequencyfftbin(params.frequency, fftsize);
-					int endbin = min(frequencyfftbin(params.frequency * 34, fftsize), frequencyfftbin(21000.0, fftsize));
-
-					if (include_first_harmonic) {
-						startbin -= 10;
-					} else {
-						startbin += 10;
-					}
-
-					float filteredmaxvalue;
-					int filteredmaxbin;
-					if (!fft_isinterrupted()) {
-						fftabs(re, im, startbin, endbin, filteredmaxvalue, filteredmaxbin, fftsize);
-					}
-
-					if (!fft_isinterrupted()) {
-						*distortionFrequency = fftbinfrequency(filteredmaxbin, fftsize);
-						*distortionLevel = fftabsvaluedb(filteredmaxvalue);
-					}
-
-					fft_disableinterrupt();
-				}
-				disableAnalysis = true;
+				analyzer.Process(params._frequency, params._analysismode);
 			}
 			else {
-				disableAnalysis = false;
+				analyzer.Finish();
 			}
 			analysisAckMailbox.Write(true);
     	}

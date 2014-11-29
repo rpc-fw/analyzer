@@ -6,10 +6,20 @@
 
 struct GeneratorParameters
 {
-	float frequency;
-	float level;
-	bool balancedio;
-	bool analysismode;
+	float _frequency;
+	float _level;
+	bool _balancedio;
+	bool _analysismode;
+
+	GeneratorParameters() {}
+
+	GeneratorParameters(float frequency, float level, bool balancedio, bool analysismode)
+	: _frequency(frequency),
+	  _level(level),
+	  _balancedio(balancedio),
+	  _analysismode(analysismode)
+	{
+	}
 };
 
 struct AnalysisCommand
