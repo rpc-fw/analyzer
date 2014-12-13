@@ -79,7 +79,7 @@ void vFrontPanelTask(void* pvParameters)
 	while(1) {
 		frontpanel.Update();
 
-		vTaskDelay(1);
+		vTaskDelay(5);
 	}
 }
 
