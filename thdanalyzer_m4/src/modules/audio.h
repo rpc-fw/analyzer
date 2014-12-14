@@ -46,3 +46,5 @@ private:
 
 	ClockMode _clockmode;
 };
+
+extern Audio audio;

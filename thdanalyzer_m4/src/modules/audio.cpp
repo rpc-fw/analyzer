@@ -9,6 +9,8 @@ extern "C" {
 
 #include "audio.h"
 
+Audio audio;
+
 static void audio_waitus(volatile uint32_t us)
 {
 	us *= (SystemCoreClock / 1000000) / 3;
