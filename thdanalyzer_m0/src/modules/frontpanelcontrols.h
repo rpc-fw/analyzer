@@ -62,6 +62,7 @@ private:
 	FrontI2C _i2c;
 
 	int32_t _encoderdelta[2];
+	bool _ledstate[7];
 };
 
 #endif /* FRONTPANELCONTROLS_H_ */

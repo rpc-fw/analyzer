@@ -103,11 +103,18 @@ int FrontPanelControls::LedToId(FrontPanelControls::Led led) const
 void FrontPanelControls::SetLed(FrontPanelControls::Led led, bool state)
 {
 	int ledid = LedToId(led);
+
+	if (state == _ledstate[ledid]) {
+		return;
+	}
+
 	uint8_t buffer[2];
 	buffer[0] = 0x40;
 	buffer[1] = uint8_t(ledid) | (state ? 0x80 : 0);
 
 	_i2c.Write(0x10, buffer, sizeof(buffer));
+
+	_ledstate[ledid] = state;
 }
 
 int FrontPanelControls::EncoderToId(FrontPanelControls::Encoder encoder) const
