@@ -153,7 +153,7 @@ void osTaskSwitch(void)
 void osTaskSwitchFromIrq(void)
 {
    //Force a context switch
-   //vPortYieldFromISR();
+   taskYIELD();
 }
 
 
