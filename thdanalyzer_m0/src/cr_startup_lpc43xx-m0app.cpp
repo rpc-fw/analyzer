@@ -133,6 +133,7 @@ void M0_SCT_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_RIT_OR_WWDT_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_TIMER0_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_GINT1_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
+void M0_GPIO4_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_TIMER3_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_MCPWM_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_ADC0_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
@@ -143,6 +144,7 @@ void M0_ADC1_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_SSP0_OR_SSP1_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_EVENTROUTER_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_USART0_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
+void M0_UART1_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_USART2_OR_C_CAN1_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_USART3_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
 void M0_I2S0_OR_I2S1_OR_QEI_IRQHandler(void) ALIAS(M0_IntDefaultHandler);
@@ -269,18 +271,18 @@ void (* const g_pfnVectors[])(void) = {
     M0_RIT_OR_WWDT_IRQHandler,          // 27 Repetitive Interrupt Timer
     M0_TIMER0_IRQHandler,               // 28 Timer0
     M0_GINT1_IRQHandler,                // 29 GINT1
-    M0_TIMER3_IRQHandler,               // 30 Timer3
-    0,                                  // 31 Reserved
-    0 ,                                 // 32 Reserved
-    M0_MCPWM_IRQHandler,                // 33 Motor Control PWM
-    M0_ADC0_IRQHandler,                 // 34 ADC0
-    M0_I2C0_OR_I2C1_IRQHandler,         // 35 I2C0 or I2C1
-    M0_SGPIO_IRQHandler,                // 36 Serial GPIO
-    M0_SPI_OR_DAC_IRQHandler,           // 37 SPI or DAC
-    M0_ADC1_IRQHandler,                 // 38 ADC1
-    M0_SSP0_OR_SSP1_IRQHandler,         // 39 SSP0 or SSP1
-    M0_EVENTROUTER_IRQHandler,          // 40 Event Router
-    M0_USART0_IRQHandler,               // 41 USART0
+    M0_GPIO4_IRQHandler,                // 30 GPIO4
+    M0_TIMER3_IRQHandler,               // 31 Timer 3
+    M0_MCPWM_IRQHandler,                // 32 Motor Control PWM
+    M0_ADC0_IRQHandler,                 // 33 A/D Converter 0
+    M0_I2C0_OR_I2C1_IRQHandler,         // 34 ORed I2C0, I2C1
+    M0_SGPIO_IRQHandler,                // 35 SGPIO (LPC43XX ONLY)
+    M0_SPI_OR_DAC_IRQHandler,           // 36 ORed SPI, DAC (LPC43XX ONLY)
+    M0_ADC1_IRQHandler,                 // 37 A/D Converter 1
+    M0_SSP0_OR_SSP1_IRQHandler,         // 38 ORed SSP0, SSP1
+    M0_EVENTROUTER_IRQHandler,          // 39 Event Router
+    M0_USART0_IRQHandler,               // 40 UART0
+    M0_UART1_IRQHandler,                // 41 UART0
     M0_USART2_OR_C_CAN1_IRQHandler,     // 42 USART2 or C CAN1
     M0_USART3_IRQHandler,               // 43 USART3
     M0_I2S0_OR_I2S1_OR_QEI_IRQHandler,  // 44 I2S0 or I2S1 or QEI

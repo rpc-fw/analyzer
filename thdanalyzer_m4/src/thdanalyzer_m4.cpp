@@ -120,12 +120,14 @@ void vMainTask(void* pvParameters)
 	bool needToStart = false;
 
 	while(1) {
-    	if ((analyzerTaskHandle == NULL) && analyzer.Update(params._frequency)) {
-			if (commandMailbox.Read(params)) {
-				process.SetParameters(params._frequency, params._level, params._balancedio);
-				ackMailbox.Write(true);
-				analyzer.Refresh();
-			}
+		if (commandMailbox.Read(params)) {
+			process.SetParameters(params._frequency, params._level, params._balancedio);
+			ackMailbox.Write(true);
+			analyzer.Refresh();
+		}
+
+		if (analyzerTaskHandle == NULL) {
+				 analyzer.Update(params._frequency);
     	}
 
 		AnalysisCommand analysiscmd;
@@ -139,7 +141,7 @@ void vMainTask(void* pvParameters)
 			}
     	}
 
-		if (needToStart) {
+		if (needToStart && analyzer.CanProcess()) {
 			xQueueReset(processingDoneQueue);
 			// start process task
 			BaseType_t r = xTaskCreate(vProcessTask, "process", 2048, NULL, 1, &analyzerTaskHandle);

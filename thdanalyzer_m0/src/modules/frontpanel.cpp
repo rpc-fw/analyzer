@@ -71,11 +71,12 @@ void FrontPanel::Init()
 
 	menu.Init(_state);
     lcdview.Init(_state);
-    frontpanelcontrols.Init();
 }
 
 void vFrontPanelTask(void* pvParameters)
 {
+    frontpanelcontrols.Init();
+
 	while(1) {
 		frontpanel.Update();
 
@@ -85,7 +86,7 @@ void vFrontPanelTask(void* pvParameters)
 
 void FrontPanel::StartTask()
 {
-	xTaskCreate(vFrontPanelTask, "frontpanel", 512, NULL, 1 /* priority */, NULL);
+	xTaskCreate(vFrontPanelTask, "frontpanel", 512, NULL, 2 /* priority */, NULL);
 }
 
 void FrontPanel::Update()

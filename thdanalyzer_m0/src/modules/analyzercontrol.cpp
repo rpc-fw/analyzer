@@ -27,52 +27,57 @@ void AnalyzerControl::StartTask()
 	_needanalysis = 0;
 	_analysiscomplete = false;
 
-	xTaskCreate(vAnalyzerControlTask, "analyzercontrol", 512, NULL, 1 /* priority */, NULL);
+	xTaskCreate(vAnalyzerControlTask, "analyzercontrol", 512, NULL, 2 /* priority */, NULL);
 }
 
 void AnalyzerControl::Update()
 {
-	State prevstate = _state;
+	AnalysisState prevstate = _analysisstate;
 	do {
-		prevstate = _state;
-
-		switch (_state) {
-		case StateIdle:
+		switch (_configurationstate) {
+		case ConfigurationIdle:
 			if (_needconfiguration) {
 				RequestConfigure();
-				_state = ConfigurationUpload;
+				_configurationstate = ConfigurationUpload;
 				break;
 			}
+			break;
+		case ConfigurationUpload:
+			if (ConfigurationReady()) {
+				_configurationstate = ConfigurationIdle;
+			}
+			break;
+		}
+
+		prevstate = _analysisstate;
+
+		switch (_analysisstate) {
+		case StateIdle:
 			if (_needanalysis > 0) {
 				RequestAnalyze();
-				_state = StateAnalysisRunning;
+				_analysisstate = StateAnalysisRunning;
 				break;
 			}
 			break;
 		case StateAnalysisRunning:
 			if (AnalyzerCommandReady()) {
 				WakeAnalysisRequest();
-				_state = StateAnalysisProcessing;
+				_analysisstate = StateAnalysisProcessing;
 			}
 			break;
 		case StateAnalysisProcessing:
 			if (_analysiscomplete) {
 				ReleaseAnalyzer();
-				_state = StateAnalysisReleasing;
+				_analysisstate = StateAnalysisReleasing;
 			}
 			break;
 		case StateAnalysisReleasing:
 			if (AnalyzerCommandReady()) {
-				_state = StateIdle;
-			}
-			break;
-		case ConfigurationUpload:
-			if (ConfigurationReady()) {
-				_state = StateIdle;
+				_analysisstate = StateIdle;
 			}
 			break;
 		}
-	} while (_state != prevstate);
+	} while (_analysisstate != prevstate);
 }
 
 void AnalyzerControl::RequestConfigure()
@@ -147,7 +152,7 @@ bool AnalyzerControl::AnalysisAvailable()
 {
 	taskENTER_CRITICAL();
 
-	bool result = _needanalysis && _state == StateAnalysisProcessing && !_analysiscomplete;
+	bool result = _needanalysis && _analysisstate == StateAnalysisProcessing && !_analysiscomplete;
 
 	taskEXIT_CRITICAL();
 

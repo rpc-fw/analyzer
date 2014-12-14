@@ -2,8 +2,6 @@
 
 namespace {
 
-	static volatile bool fftinterrupted = false;
-
 	float coeffcos[] = { -1.000000000000000, 0.000000000000000, 0.707106769084930,
 			0.923879504203796, 0.980785250663757, 0.995184719562531,
 			0.998795449733734, 0.999698817729950, 0.999924719333649,
@@ -20,21 +18,6 @@ namespace {
 
 }
 
-
-bool fft_isinterrupted()
-{
-	return fftinterrupted;
-}
-
-void fft_interrupt()
-{
-	fftinterrupted = true;
-}
-
-void fft_disableinterrupt()
-{
-	fftinterrupted = false;
-}
 
 void fft(float *re, float *im, int m)
 {
@@ -54,10 +37,6 @@ void fft(float *re, float *im, int m)
 	float sr,si;
 
 	for (;i<nm1;) {
-
-		if (fft_isinterrupted()) {
-			return;
-		}
 
 		int count = std::min(nm1 - i, 256);
 		for (; count--; i++) {
@@ -90,15 +69,7 @@ void fft(float *re, float *im, int m)
 		sr = coeffcos[l-1];
 		si = coeffsin[l-1];
 
-		if (fft_isinterrupted()) {
-			return;
-		}
-
 		for (j=1;j<le2+1; ) {
-
-			if (fft_isinterrupted()) {
-				return;
-			}
 
 			int count = std::min(le2+1 - j, 256);
 			for (; count--; j++) {

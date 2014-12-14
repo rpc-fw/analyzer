@@ -104,6 +104,8 @@ int main(void) {
     // Spawn init task
     xTaskCreate(vInitTask, "init", 2048, NULL, tskIDLE_PRIORITY, NULL);
 
+    __enable_irq();
+
     // Run main loop
     vTaskStartScheduler();
 

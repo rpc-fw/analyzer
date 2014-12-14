@@ -25,15 +25,19 @@ private:
 	void ReleaseAnalyzer();
 	bool ConfigurationReady();
 
-	enum State {
+	enum ConfigurationState {
+		ConfigurationIdle,
+		ConfigurationUpload
+	};
+	enum AnalysisState {
 		StateIdle,
 		StateAnalysisRunning,
 		StateAnalysisProcessing,
 		StateAnalysisReleasing,
-		ConfigurationUpload
 	};
 
-	State _state;
+	AnalysisState _analysisstate;
+	ConfigurationState _configurationstate;
 
 	bool _needconfiguration;
 	GeneratorParameters _configuration;

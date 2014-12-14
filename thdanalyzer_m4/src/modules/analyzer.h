@@ -35,7 +35,10 @@ public:
 
 	void Refresh();
 	bool Update(float frequency);
+
+	bool CanProcess() const;
 	void Process(float frequency, bool mode);
+
 	void Finish();
 
 private:

@@ -84,10 +84,6 @@ void Analyzer::fftabs(float *re, float *im, int start, int end, float& maxvalue,
 	for (int i = start; i < end; ) {
 		int n = min(end - i, 256);
 
-		if (fft_isinterrupted()) {
-			return;
-		}
-
 		for (; n--; i++) {
 			float a = hypotf(re[i], im[i]) * scaling_0dBu;
 			re[i] = a;
@@ -129,7 +125,6 @@ void Analyzer::initwindow()
 void Analyzer::Refresh()
 {
 	enoughdata = false;
-	fft_disableinterrupt();
 }
 
 bool Analyzer::Update(float frequency)
@@ -165,6 +160,11 @@ bool Analyzer::Update(float frequency)
 	return !resultready;
 }
 
+bool Analyzer::CanProcess() const
+{
+	return enoughdata;
+}
+
 void Analyzer::Process(float frequency, bool mode)
 {
 	float *fftmem = (float*)(SDRAM_BASE_ADDR + 15*1048576);
@@ -173,65 +173,48 @@ void Analyzer::Process(float frequency, bool mode)
 	float *refiltered = &fftmem[2*MAXFFTSIZE];
 	float *imfiltered = &fftmem[3*MAXFFTSIZE];
 
-	if (enoughdata) {
-		bool include_first_harmonic = false;
-		float *re;
-		float *im;
+	bool include_first_harmonic = false;
+	float *re;
+	float *im;
 
-		if (mode) {
-			re = resignal;
-			im = imsignal;
-			include_first_harmonic = true;
-		}
-		else {
-			re = refiltered;
-			im = imfiltered;
-			include_first_harmonic = false;
-		}
-
-		if (!fft_isinterrupted()) {
-			float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + fftsize*4);
-			for (int i = 0; i < fftsize; i++) {
-				float w = fftwindow[i];
-				resignal[i] = (resignal[i] - signalmean) * w;
-				refiltered[i] = (refiltered[i] - filteredmean) * w;
-			}
-		}
-
-		if (!fft_isinterrupted()) {
-			memset(imsignal, 0, fftsize*sizeof(float));
-		}
-
-		if (!fft_isinterrupted()) {
-			memset(imfiltered, 0, fftsize*sizeof(float));
-		}
-
-		if (!fft_isinterrupted()) {
-			fft(re, im, fftsizelog2-1);
-		}
-
-		int startbin = frequencyfftbin(frequency, fftsize);
-		int endbin = min(frequencyfftbin(frequency * 34, fftsize), frequencyfftbin(21000.0, fftsize));
-
-		if (include_first_harmonic) {
-			startbin -= 10;
-		} else {
-			startbin += 10;
-		}
-
-		float filteredmaxvalue;
-		int filteredmaxbin;
-		if (!fft_isinterrupted()) {
-			fftabs(re, im, startbin, endbin, filteredmaxvalue, filteredmaxbin, fftsize);
-		}
-
-		if (!fft_isinterrupted()) {
-			*distortionFrequency = fftbinfrequency(filteredmaxbin, fftsize);
-			*distortionLevel = fftabsvaluedb(filteredmaxvalue);
-		}
-
-		fft_disableinterrupt();
+	if (mode) {
+		re = resignal;
+		im = imsignal;
+		include_first_harmonic = true;
 	}
+	else {
+		re = refiltered;
+		im = imfiltered;
+		include_first_harmonic = false;
+	}
+
+	float *fftwindow = (float*)(SDRAM_BASE_ADDR + 14*1048576 + fftsize*4);
+	for (int i = 0; i < fftsize; i++) {
+		float w = fftwindow[i];
+		resignal[i] = (resignal[i] - signalmean) * w;
+		refiltered[i] = (refiltered[i] - filteredmean) * w;
+	}
+
+	memset(imsignal, 0, fftsize*sizeof(float));
+	memset(imfiltered, 0, fftsize*sizeof(float));
+	fft(re, im, fftsizelog2-1);
+
+	int startbin = frequencyfftbin(frequency, fftsize);
+	int endbin = min(frequencyfftbin(frequency * 34, fftsize), frequencyfftbin(21000.0, fftsize));
+
+	if (include_first_harmonic) {
+		startbin -= 10;
+	} else {
+		startbin += 10;
+	}
+
+	float filteredmaxvalue;
+	int filteredmaxbin;
+	fftabs(re, im, startbin, endbin, filteredmaxvalue, filteredmaxbin, fftsize);
+
+	*distortionFrequency = fftbinfrequency(filteredmaxbin, fftsize);
+	*distortionLevel = fftabsvaluedb(filteredmaxvalue);
+
 	resultready = true;
 }
 
