@@ -13,6 +13,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
 
 #ifdef __USE_CMSIS
 #include "LPC43xx.h"
@@ -84,10 +85,25 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName)
 
 Analyzer analyzer;
 
-// Main task
-void vInitTask(void* pvParameters)
+GeneratorParameters params = GeneratorParameters(1000.0, 4.0, true, false);
+
+QueueHandle_t processingDoneQueue;
+
+void vProcessTask(void* pvParameters)
 {
-    GeneratorParameters params = GeneratorParameters(1000.0, 4.0, true, false);
+	analyzer.Process(params._frequency, params._analysismode);
+
+	// ack process to main task
+	char result = 1;
+	xQueueSend(processingDoneQueue, &result, 0);
+
+	vTaskDelete(NULL);
+}
+
+// Main task
+void vMainTask(void* pvParameters)
+{
+	processingDoneQueue = xQueueCreate(1, 1);
 
 	while(1) {
     	if (analyzer.Update(params._frequency)) {
@@ -101,7 +117,12 @@ void vInitTask(void* pvParameters)
 		AnalysisCommand analysiscmd;
 		if (analysisCommandMailbox.Read(analysiscmd)) {
 			if (analysiscmd.commandType == AnalysisCommand::BLOCK) {
-				analyzer.Process(params._frequency, params._analysismode);
+				// start process task
+				TaskHandle_t processHandle = NULL;
+			    xTaskCreate(vProcessTask, "process", 2048, NULL, 1, &processHandle);
+				// wait
+				char result;
+				while (xQueueReceive(processingDoneQueue, &result, portMAX_DELAY) != pdTRUE) {}
 			}
 			else {
 				analyzer.Finish();
@@ -154,8 +175,8 @@ int main(void)
 
     start_coprocessors();
 
-    // Spawn init task
-    xTaskCreate(vInitTask, "init", 2048, NULL, tskIDLE_PRIORITY, NULL);
+    // Spawn main task
+    xTaskCreate(vMainTask, "main", 256, NULL, tskIDLE_PRIORITY, NULL);
 
     init_sdram();
 
