@@ -116,8 +116,11 @@ void vProcessTask(void* pvParameters)
 // Main task
 void vMainTask(void* pvParameters)
 {
+	TaskHandle_t analyzerTaskHandle = NULL;
+	bool needToStart = false;
+
 	while(1) {
-    	if (analyzer.Update(params._frequency)) {
+    	if ((analyzerTaskHandle == NULL) && analyzer.Update(params._frequency)) {
 			if (commandMailbox.Read(params)) {
 				process.SetParameters(params._frequency, params._level, params._balancedio);
 				ackMailbox.Write(true);
@@ -128,28 +131,39 @@ void vMainTask(void* pvParameters)
 		AnalysisCommand analysiscmd;
 		if (analysisCommandMailbox.Read(analysiscmd)) {
 			if (analysiscmd.commandType == AnalysisCommand::BLOCK) {
-				xQueueReset(processingDoneQueue);
-				// start process task
-				TaskHandle_t processHandle = NULL;
-				BaseType_t r = xTaskCreate(vProcessTask, "process", 2048, NULL, 1, &processHandle);
-				if (processHandle != NULL) {
-					// wait
-					MainTaskEvent msg;
-					while (xQueueReceive(processingDoneQueue, &msg, portMAX_DELAY) != pdTRUE) {}
-
-					if (msg == InterruptAnalyzer) {
-						// need to stop the analyzer
-						vTaskSuspend(processHandle);
-						vTaskDelete(processHandle);
-						xQueueReset(processingDoneQueue);
-					}
-				}
+				needToStart = true;
 			}
 			else {
 				analyzer.Finish();
+				analysisAckMailbox.Write(true);
 			}
-			analysisAckMailbox.Write(true);
     	}
+
+		if (needToStart) {
+			xQueueReset(processingDoneQueue);
+			// start process task
+			BaseType_t r = xTaskCreate(vProcessTask, "process", 2048, NULL, 1, &analyzerTaskHandle);
+			if (analyzerTaskHandle != NULL) {
+				needToStart = false;
+			}
+		}
+
+		if (analyzerTaskHandle != NULL) {
+			// wait
+			MainTaskEvent msg;
+			if (xQueueReceive(processingDoneQueue, &msg, 0) == pdTRUE)
+			{
+				if (msg == InterruptAnalyzer) {
+					// need to stop the analyzer
+					vTaskSuspend(analyzerTaskHandle);
+					vTaskDelete(analyzerTaskHandle);
+					xQueueReset(processingDoneQueue);
+				}
+
+				analysisAckMailbox.Write(true);
+				analyzerTaskHandle = NULL;
+			}
+		}
 
 		// Delay instead of yielding, so that idle process can sweep out deleted tasks
 		vTaskDelay(1);
