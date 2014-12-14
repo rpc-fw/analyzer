@@ -47,14 +47,6 @@ void check_failed(uint8_t *file, uint32_t line)
 #include "modules/process.h"
 #include "lib/fft.h"
 
-extern "C"
-void M0CORE_IRQHandler(void)
-{
-	fft_interrupt();
-	// clear event interrupt
-	LPC_CREG->M0TXEVENT = 0x0;
-}
-
 uint8_t freertos_heap[0x8000];
 
 void init_freertos_heap()
@@ -82,6 +74,11 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName)
 	for( ;; );
 }
 
+enum MainTaskEvent {
+	AnalyzerDone,
+	InterruptAnalyzer
+};
+
 
 Analyzer analyzer;
 
@@ -89,12 +86,28 @@ GeneratorParameters params = GeneratorParameters(1000.0, 4.0, true, false);
 
 QueueHandle_t processingDoneQueue;
 
+extern "C"
+void M0CORE_IRQHandler(void)
+{
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+	MainTaskEvent msg = InterruptAnalyzer;
+	xQueueSendToBackFromISR(processingDoneQueue, &msg, &xHigherPriorityTaskWoken);
+
+	// clear event interrupt
+	LPC_CREG->M0TXEVENT = 0x0;
+
+	if (xHigherPriorityTaskWoken != pdFALSE) {
+		taskYIELD();
+	}
+}
+
 void vProcessTask(void* pvParameters)
 {
 	analyzer.Process(params._frequency, params._analysismode);
 
 	// ack process to main task
-	char result = 1;
+	MainTaskEvent result = AnalyzerDone;
 	xQueueSend(processingDoneQueue, &result, 0);
 
 	vTaskDelete(NULL);
@@ -103,8 +116,6 @@ void vProcessTask(void* pvParameters)
 // Main task
 void vMainTask(void* pvParameters)
 {
-	processingDoneQueue = xQueueCreate(1, 1);
-
 	while(1) {
     	if (analyzer.Update(params._frequency)) {
 			if (commandMailbox.Read(params)) {
@@ -117,19 +128,31 @@ void vMainTask(void* pvParameters)
 		AnalysisCommand analysiscmd;
 		if (analysisCommandMailbox.Read(analysiscmd)) {
 			if (analysiscmd.commandType == AnalysisCommand::BLOCK) {
+				xQueueReset(processingDoneQueue);
 				// start process task
 				TaskHandle_t processHandle = NULL;
-			    xTaskCreate(vProcessTask, "process", 2048, NULL, 1, &processHandle);
-				// wait
-				char result;
-				while (xQueueReceive(processingDoneQueue, &result, portMAX_DELAY) != pdTRUE) {}
+				BaseType_t r = xTaskCreate(vProcessTask, "process", 2048, NULL, 1, &processHandle);
+				if (processHandle != NULL) {
+					// wait
+					MainTaskEvent msg;
+					while (xQueueReceive(processingDoneQueue, &msg, portMAX_DELAY) != pdTRUE) {}
+
+					if (msg == InterruptAnalyzer) {
+						// need to stop the analyzer
+						vTaskSuspend(processHandle);
+						vTaskDelete(processHandle);
+						xQueueReset(processingDoneQueue);
+					}
+				}
 			}
 			else {
 				analyzer.Finish();
 			}
 			analysisAckMailbox.Write(true);
     	}
-		taskYIELD();
+
+		// Delay instead of yielding, so that idle process can sweep out deleted tasks
+		vTaskDelay(1);
 	}
 }
 
@@ -176,7 +199,8 @@ int main(void)
     start_coprocessors();
 
     // Spawn main task
-    xTaskCreate(vMainTask, "main", 256, NULL, tskIDLE_PRIORITY, NULL);
+    xTaskCreate(vMainTask, "main", 256, NULL, 2, NULL);
+	processingDoneQueue = xQueueCreate(32, sizeof(MainTaskEvent));
 
     init_sdram();
 
@@ -186,7 +210,7 @@ int main(void)
 	__disable_irq();
 
 	// Enable M0 interrupt
-	NVIC_SetPriority(M0CORE_IRQn, 3);
+	NVIC_SetPriority(M0CORE_IRQn, 1);
 	NVIC_EnableIRQ(M0CORE_IRQn);
 
     audio.Init();
