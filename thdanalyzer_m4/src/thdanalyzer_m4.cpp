@@ -12,6 +12,9 @@
 #include <string.h>
 #include <algorithm>
 
+#include "FreeRTOS.h"
+#include "task.h"
+
 #ifdef __USE_CMSIS
 #include "LPC43xx.h"
 #endif
@@ -52,12 +55,31 @@ void M0CORE_IRQHandler(void)
 	LPC_CREG->M0TXEVENT = 0x0;
 }
 
-extern "C"
-void SysTick_Handler(void)
+uint8_t freertos_heap[0x8000];
+
+void init_freertos_heap()
 {
-	// M0 core does not have a systick handler: pass systick as a core interrupt
-    __DSB();
-    __SEV();
+	const HeapRegion_t xHeapRegions[] =
+	{
+	    { freertos_heap, 0x8000 },
+	    { NULL, 0 } /* Terminates the array. */
+	};
+
+	// Initialize heap */
+	vPortDefineHeapRegions(xHeapRegions);
+}
+
+extern "C"
+void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName)
+{
+	( void ) pcTaskName;
+	( void ) pxTask;
+
+	/* Run time stack overflow checking is performed if
+        configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
+        function is called if a stack overflow is detected. */
+	taskDISABLE_INTERRUPTS();
+	for( ;; );
 }
 
 // TODO: insert other definitions and declarations here
@@ -263,45 +285,14 @@ AudioIrqParameters CalculateParameters(float frequencyhz, float leveldbu, bool b
 	return irqparams;
 }
 
-int main(void)
+Analyzer analyzer;
+
+// Main task
+void vInitTask(void* pvParameters)
 {
-	Analyzer analyzer;
-
-	const int clock_multiplier = 17;
-    CGU_Init(clock_multiplier);
-    SystemCoreClock = clock_multiplier*12000000;
-
-    // Start M0APP slave processor
-#if defined (LPC43_MULTICORE_M0APP)
-    cr_start_m0(SLAVE_M0APP,&__core_m0app_START__);
-#endif
-
-    // Start M0SUB slave processor
-#if defined (LPC43_MULTICORE_M0SUB)
-    cr_start_m0(SLAVE_M0SUB,&__core_m0sub_START__);
-#endif
-
-    SysTick_Config(SystemCoreClock/1000);
-    emc_init();
-	memset((unsigned int*)SDRAM_BASE_ADDR, 0xFF, SDRAM_SIZE_BYTES);
-
-	analyzer.Init();
-
-	// Prepare for first I2S interrupt
     GeneratorParameters params = GeneratorParameters(1000.0, 4.0, true, false);
-	oscMailbox.Write(CalculateParameters(1000.0, 4.0, true));
 
-	__disable_irq();
-
-	// Enable M0 interrupt
-	NVIC_SetPriority(M0CORE_IRQn, 3);
-	NVIC_EnableIRQ(M0CORE_IRQn);
-
-    audio.Init();
-    __enable_irq();
-
-    while(1) {
-
+	while(1) {
     	if (analyzer.Update(params._frequency)) {
 			if (commandMailbox.Read(params)) {
 				oscMailbox.Write(CalculateParameters(params._frequency, params._level, params._balancedio));
@@ -320,6 +311,74 @@ int main(void)
 			}
 			analysisAckMailbox.Write(true);
     	}
-    }
+		taskYIELD();
+	}
+}
+
+void set_clock_frequency()
+{
+	const int clock_multiplier = 17;
+    CGU_Init(clock_multiplier);
+    SystemCoreClock = clock_multiplier*12000000;
+}
+
+void set_fpu_configuration()
+{
+    FPU->FPCCR |= FPU_FPCCR_ASPEN_Msk;
+    FPU->FPCCR &= ~FPU_FPCCR_LSPEN_Msk;
+}
+
+void start_coprocessors()
+{
+    // Start M0APP slave processor
+#if defined (LPC43_MULTICORE_M0APP)
+    cr_start_m0(SLAVE_M0APP,&__core_m0app_START__);
+#endif
+
+    // Start M0SUB slave processor
+#if defined (LPC43_MULTICORE_M0SUB)
+    cr_start_m0(SLAVE_M0SUB,&__core_m0sub_START__);
+#endif
+}
+
+void init_sdram()
+{
+    emc_init();
+	memset((unsigned int*)SDRAM_BASE_ADDR, 0xFF, SDRAM_SIZE_BYTES);
+}
+
+int main(void)
+{
+	set_clock_frequency();
+
+    set_fpu_configuration();
+
+    init_freertos_heap();
+
+    start_coprocessors();
+
+    // Spawn init task
+    xTaskCreate(vInitTask, "init", 2048, NULL, tskIDLE_PRIORITY, NULL);
+
+    init_sdram();
+
+	analyzer.Init();
+
+	// Prepare for first I2S interrupt
+	oscMailbox.Write(CalculateParameters(1000.0, 4.0, true));
+
+	__disable_irq();
+
+	// Enable M0 interrupt
+	NVIC_SetPriority(M0CORE_IRQn, 3);
+	NVIC_EnableIRQ(M0CORE_IRQn);
+
+    audio.Init();
+
+    __enable_irq();
+
+    // Run main loop
+    vTaskStartScheduler();
+
 	return 0;
 }
