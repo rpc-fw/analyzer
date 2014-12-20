@@ -84,7 +84,7 @@
 
 //Priority at which the HTTP server should run
 #ifndef HTTP_SERVER_PRIORITY
-   #define HTTP_SERVER_PRIORITY 1
+   #define HTTP_SERVER_PRIORITY 3
 #elif (HTTP_SERVER_PRIORITY < 0)
    #error HTTP_SERVER_PRIORITY parameter is not valid
 #endif
