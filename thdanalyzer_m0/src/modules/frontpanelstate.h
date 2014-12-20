@@ -37,7 +37,7 @@ public:
 		_analyzerfrequencydisplaymode = AnalyzerFormat::FrequencyDisplayModeHz;
 		_analyzerleveldisplaymode = AnalyzerFormat::LevelDisplayModeRefRelativeDecibel;
 		_distortionfrequencydisplaymode = AnalyzerFormat::FrequencyDisplayModeHz;
-		_distortionleveldisplaymode = AnalyzerFormat::LevelDisplayModeGeneratorRelativeDecibel;
+		_distortionleveldisplaymode = AnalyzerFormat::LevelDisplayModeRefRelativeDecibel;
 	}
 
 	void SetOperationMode(OperationMode mode) { _operationmode = mode; Configure(); Refresh(); }
