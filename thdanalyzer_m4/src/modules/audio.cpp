@@ -151,14 +151,22 @@ void Audio::Clock(ClockMode clockmode)
 {
 	_clockmode = clockmode;
 
-	// TODO
-
 	switch (clockmode)
 	{
 	case AUDIO_CLOCK_48000:
 		InCKS0(false);
 		InCKS1(true);
 		InCKS2(true);
+		break;
+	case AUDIO_CLOCK_96000:
+		InCKS0(true);
+		InCKS1(true);
+		InCKS2(false);
+		break;
+	case AUDIO_CLOCK_192000:
+		InCKS0(false);
+		InCKS1(false);
+		InCKS2(false);
 		break;
 	default:
 		while(1);
@@ -293,7 +301,7 @@ void Audio::Init()
 
 	AdcReset();
 	DacReset();
-	Clock(AUDIO_CLOCK_48000);
+	Clock(AUDIO_CLOCK_192000);
 	I2SSetup();
 
 	audio_waitus(100);

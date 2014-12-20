@@ -2,6 +2,7 @@
 #define ANALYZER_H_
 
 #include <math.h>
+#include "audio.h"
 
 class Analyzer
 {
@@ -19,12 +20,12 @@ public:
 
 	int frequencyfftbin(float frequency, int fftsize)
 	{
-		return roundf(frequency) * (fftsize / 48000.0);
+		return roundf(frequency) * (fftsize / audio.SampleRateFloat());
 	}
 
 	float fftbinfrequency(int index, int fftsize)
 	{
-		return float(index) * (48000.0 / fftsize);
+		return float(index) * (audio.SampleRateFloat() / fftsize);
 	}
 
 	float fftabsvaluedb(float value)

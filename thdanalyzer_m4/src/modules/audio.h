@@ -8,6 +8,10 @@ public:
 	int SampleRate() const
 	{
 		switch (_clockmode) {
+		case AUDIO_CLOCK_192000:
+			return 192000;
+		case AUDIO_CLOCK_96000:
+			return 96000;
 		case AUDIO_CLOCK_48000:
 		default:
 			return 48000;
@@ -40,7 +44,9 @@ private:
 	void DacEnable();
 
 	enum ClockMode {
-		AUDIO_CLOCK_48000 = 0
+		AUDIO_CLOCK_48000 = 0,
+		AUDIO_CLOCK_96000,
+		AUDIO_CLOCK_192000
 	};
 	void Clock(ClockMode clockmode);
 

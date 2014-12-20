@@ -165,7 +165,7 @@
 									<listOptionValue builtIn="false" value="__MULTICORE_MASTER_SLAVE_M0APP"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.456917126" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fsingle-precision-constant" valueType="string"/>
-								<option id="gnu.cpp.compiler.option.optimization.flags.1659414874" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="-Os" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.optimization.flags.1659414874" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="" valueType="string"/>
 								<option id="com.crt.advproject.cpp.hdrlib.777773754" name="Library headers" superClass="com.crt.advproject.cpp.hdrlib" value="com.crt.advproject.cpp.hdrlib.newlibnano" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.364516292" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_LPC43xx_DriverLib/inc}&quot;"/>
@@ -175,6 +175,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/lib}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.cpp.fpu.602795604" name="Floating point" superClass="com.crt.advproject.cpp.fpu" value="com.crt.advproject.cpp.fpu.fpv4" valueType="enumerated"/>
+								<option id="com.crt.advproject.cpp.exe.release.option.optimization.level.113424110" name="Optimization Level" superClass="com.crt.advproject.cpp.exe.release.option.optimization.level" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
 								<inputType id="com.crt.advproject.compiler.cpp.input.864654147" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.release.1730432580" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.release">
@@ -201,6 +202,7 @@
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/src/FreeRTOS/include}"/>
 								</option>
 								<option id="com.crt.advproject.gcc.fpu.1646422679" name="Floating point" superClass="com.crt.advproject.gcc.fpu" value="com.crt.advproject.gcc.fpu.fpv4" valueType="enumerated"/>
+								<option id="com.crt.advproject.gcc.exe.release.option.optimization.level.161842204" name="Optimization Level" superClass="com.crt.advproject.gcc.exe.release.option.optimization.level" value="gnu.c.optimization.level.most" valueType="enumerated"/>
 								<inputType id="com.crt.advproject.compiler.input.1556108422" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gas.exe.release.1500178572" name="MCU Assembler" superClass="com.crt.advproject.gas.exe.release">
@@ -245,6 +247,18 @@
 							<tool id="com.crt.advproject.link.exe.release.591977717" name="MCU Linker" superClass="com.crt.advproject.link.exe.release"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.crt.advproject.config.exe.release.2008573627.549047009" name="cr_start_m0.c" rcbsApplicability="disable" resourcePath="src/cr_start_m0.c" toolsToInvoke="com.crt.advproject.gcc.exe.release.1730432580.769131809">
+						<tool id="com.crt.advproject.gcc.exe.release.1730432580.769131809" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.release.1730432580">
+							<option id="com.crt.advproject.gcc.exe.release.option.optimization.level.605538540" superClass="com.crt.advproject.gcc.exe.release.option.optimization.level" value="gnu.c.optimization.level.size" valueType="enumerated"/>
+							<inputType id="com.crt.advproject.compiler.input.789814139" superClass="com.crt.advproject.compiler.input"/>
+						</tool>
+						<tool customBuildStep="true" id="org.eclipse.cdt.managedbuilder.ui.rcbs.1349418729" name="Resource Custom Build Step">
+							<inputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.inputtype.1379215608" name="Resource Custom Build Step Input Type">
+								<additionalInput kind="additionalinputdependency" paths=""/>
+							</inputType>
+							<outputType id="org.eclipse.cdt.managedbuilder.ui.rcbs.outputtype.50373678" name="Resource Custom Build Step Output Type"/>
+						</tool>
+					</fileInfo>
 					<sourceEntries>
 						<entry excluding="shmem" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>
 					</sourceEntries>

@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "analyzer.h"
+#include "audio.h"
 #include "audioring.h"
 #include "../common/sharedtypes.h"
 
@@ -135,9 +136,9 @@ bool Analyzer::Update(float frequency)
 	float *refiltered = &fftmem[2*MAXFFTSIZE];
 	float *imfiltered = &fftmem[3*MAXFFTSIZE];
 
-	int extralen = max(int(4 * 48000.0 / frequency), 200);
+	int extralen = max(int(4 * audio.SampleRateFloat() / frequency), 200);
 	int datalen = (inputRing.used() >> 1);
-	int mindatalen = min(max(int(11 * 48000.0 / frequency), 1024), MAXFFTSIZE);
+	int mindatalen = min(max(int(11 * audio.SampleRateFloat() / frequency), 1024), MAXFFTSIZE);
 
 	if (!resultready) {
 		if (datalen < mindatalen + extralen) {
@@ -200,7 +201,7 @@ void Analyzer::Process(float frequency, bool mode)
 	fft(re, im, fftsizelog2-1);
 
 	int startbin = frequencyfftbin(frequency, fftsize);
-	int endbin = min(frequencyfftbin(frequency * 34, fftsize), frequencyfftbin(21000.0, fftsize));
+	int endbin = min(frequencyfftbin(frequency * 34, fftsize), frequencyfftbin(audio.SampleRateFloat() - 3000.0, fftsize));
 
 	if (include_first_harmonic) {
 		startbin -= 10;

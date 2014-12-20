@@ -144,7 +144,7 @@ void vMainTask(void* pvParameters)
 		if (needToStart && analyzer.CanProcess()) {
 			xQueueReset(processingDoneQueue);
 			// start process task
-			BaseType_t r = xTaskCreate(vProcessTask, "process", 2048, NULL, 1, &analyzerTaskHandle);
+			BaseType_t r = xTaskCreate(vProcessTask, "process", 1024, NULL, 1, &analyzerTaskHandle);
 			if (analyzerTaskHandle != NULL) {
 				needToStart = false;
 			}
@@ -168,7 +168,7 @@ void vMainTask(void* pvParameters)
 		}
 
 		// Delay instead of yielding, so that idle process can sweep out deleted tasks
-		vTaskDelay(1);
+		vTaskDelay(5);
 	}
 }
 

@@ -72,9 +72,9 @@ void I2S0_IRQHandler(void)
 	int32_t filtered1 = Filter(average, filterstate, current_params.filter);
 	int32_t filtered2 = Filter(filtered1, filterstate2, current_params.filter);
 	int32_t filtered3 = Filter(filtered2, filterstate3, current_params.filter);
-	int32_t filtered4 = Filter(filtered3, filterstate4, current_params.filter);
+	//int32_t filtered4 = Filter(filtered3, filterstate4, current_params.filter);
 	inputRing.insert(average);
-	inputRing.insert(filtered4);
+	inputRing.insert(filtered3);
 
 	if (inputRing.used() >= INPUTRINGLEN/2+16UL) {
 		inputRing.advance(16);
