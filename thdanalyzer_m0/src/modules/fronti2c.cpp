@@ -29,7 +29,7 @@ bool FrontI2C::Read(uint8_t address, uint8_t* buffer, int count)
 	setup.rx_length   = count;
 	setup.retransmissions_max = 10;
 
-	status = I2C_MasterTransferData(LPC_I2C0, &setup, I2C_TRANSFER_INTERRUPT);
+	status = I2C_MasterTransferData(LPC_I2C0, &setup, I2C_TRANSFER_POLLING);
 	/*while (!I2C_MasterTransferComplete(LPC_I2C0)) {
 		taskYIELD();
 	}*/
@@ -53,7 +53,7 @@ bool FrontI2C::Write(uint8_t address, uint8_t* buffer, int count)
     setup.rx_length   = 0;
     setup.retransmissions_max = 10;
 
-    status = I2C_MasterTransferData(LPC_I2C0, &setup, I2C_TRANSFER_INTERRUPT);
+    status = I2C_MasterTransferData(LPC_I2C0, &setup, I2C_TRANSFER_POLLING);
 	/*while (!I2C_MasterTransferComplete(LPC_I2C0)) {
 		taskYIELD();
 	}*/
