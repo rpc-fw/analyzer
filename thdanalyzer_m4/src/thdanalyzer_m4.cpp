@@ -110,7 +110,7 @@ void vProcessTask(void* pvParameters)
 	MainTaskEvent result = AnalyzerDone;
 	xQueueSend(processingDoneQueue, &result, 0);
 
-	vTaskDelete(NULL);
+	vTaskSuspend(NULL);
 }
 
 // Main task
@@ -158,12 +158,14 @@ void vMainTask(void* pvParameters)
 				if (msg == InterruptAnalyzer) {
 					// need to stop the analyzer
 					vTaskSuspend(analyzerTaskHandle);
-					vTaskDelete(analyzerTaskHandle);
-					xQueueReset(processingDoneQueue);
 				}
 
-				analysisAckMailbox.Write(true);
+				vTaskDelete(analyzerTaskHandle);
 				analyzerTaskHandle = NULL;
+				
+				xQueueReset(processingDoneQueue);
+
+				analysisAckMailbox.Write(true);
 			}
 		}
 
