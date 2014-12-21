@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include "freertos.h"
@@ -17,6 +18,86 @@
 FrontPanelControls frontpanelcontrols;
 
 #include "frontpanelstate.h"
+
+const int gain_accel_scale = 100;
+const int gain_accel_threshold = 4;
+const int freq_accel_scale = 100;
+const int freq_accel_threshold = 3;
+
+static int AccelerateGain(int delta)
+{
+#define NUM_MEASUREMENTS 4
+	static int counts[NUM_MEASUREMENTS] = {0};
+	static uint32_t times[NUM_MEASUREMENTS] = {0};
+	static uint32_t lasttime = 0;
+
+	uint32_t curtime = xTaskGetTickCount();
+	int timedelta = curtime - lasttime;
+	lasttime = curtime;
+
+	for (int i = 0; i < NUM_MEASUREMENTS - 1; i++) {
+		counts[i] = counts[i+1];
+		times[i] = times[i+1];
+	}
+
+	counts[NUM_MEASUREMENTS - 1] = delta;
+	times[NUM_MEASUREMENTS - 1] = timedelta;
+
+	int totaltime = 0;
+	int totaldelta = 0;
+	for (int i = NUM_MEASUREMENTS - 1; i >= 0; i--) {
+		totaldelta += counts[i];
+		totaltime += times[i];
+		if (totaltime > 3*gain_accel_scale) {
+			break;
+		}
+	}
+
+	int weight = abs(totaldelta);
+
+	if (weight > gain_accel_threshold) {
+		return delta * (weight / gain_accel_threshold);
+	}
+
+	return delta;
+}
+
+static int AccelerateFrequency(int delta)
+{
+	static int counts[NUM_MEASUREMENTS] = {0};
+	static uint32_t times[NUM_MEASUREMENTS] = {0};
+	static uint32_t lasttime = 0;
+
+	uint32_t curtime = xTaskGetTickCount();
+	int timedelta = curtime - lasttime;
+	lasttime = curtime;
+
+	for (int i = 0; i < NUM_MEASUREMENTS - 1; i++) {
+		counts[i] = counts[i+1];
+		times[i] = times[i+1];
+	}
+
+	counts[NUM_MEASUREMENTS - 1] = delta;
+	times[NUM_MEASUREMENTS - 1] = timedelta;
+
+	int totaltime = 0;
+	int totaldelta = 0;
+	for (int i = NUM_MEASUREMENTS - 1; i >= 0; i--) {
+		totaldelta += counts[i];
+		totaltime += times[i];
+		if (totaltime > 3*gain_accel_scale) {
+			break;
+		}
+	}
+
+	int weight = abs(totaldelta);
+
+	if (weight > freq_accel_threshold) {
+		return delta * (weight / freq_accel_threshold);
+	}
+
+	return delta;
+}
 
 float FrontPanelState::ValidateFrequency(float frequency)
 {
@@ -194,10 +275,12 @@ void FrontPanel::Update()
 		}
 		else {
 			if (gaindelta) {
+				gaindelta = AccelerateGain(gaindelta);
 				MoveGain(gaindelta);
 			}
 
 			if (freqdelta) {
+				freqdelta = AccelerateFrequency(freqdelta);
 				MoveFrequency(freqdelta);
 			}
 		}
@@ -349,13 +432,6 @@ void FrontPanel::Cancel()
 
 void FrontPanel::MoveGain(int32_t delta)
 {
-	if (delta <= -11) {
-		delta = (delta + 8) * 4;
-	}
-	else if (delta >= 11) {
-		delta = (delta - 8) * 4;
-	}
-
 	float level = _state->Level();
 	if (level <= -100.0) {
 		_state->SetLevel(level + float(delta));
