@@ -19,85 +19,61 @@ FrontPanelControls frontpanelcontrols;
 
 #include "frontpanelstate.h"
 
-const int gain_accel_scale = 100;
-const int gain_accel_threshold = 4;
-const int freq_accel_scale = 100;
-const int freq_accel_threshold = 3;
-
-static int AccelerateGain(int delta)
+template <int SCALE, int THRESHOLD, int NUM_MEASUREMENTS = 4>
+class AccelerateEncoder
 {
-#define NUM_MEASUREMENTS 4
-	static int counts[NUM_MEASUREMENTS] = {0};
-	static uint32_t times[NUM_MEASUREMENTS] = {0};
-	static uint32_t lasttime = 0;
+private:
+	int32_t counts[NUM_MEASUREMENTS];
+	uint32_t times[NUM_MEASUREMENTS];
 
-	uint32_t curtime = xTaskGetTickCount();
-	int timedelta = curtime - lasttime;
-	lasttime = curtime;
+	uint32_t lasttime;
 
-	for (int i = 0; i < NUM_MEASUREMENTS - 1; i++) {
-		counts[i] = counts[i+1];
-		times[i] = times[i+1];
-	}
-
-	counts[NUM_MEASUREMENTS - 1] = delta;
-	times[NUM_MEASUREMENTS - 1] = timedelta;
-
-	int totaltime = 0;
-	int totaldelta = 0;
-	for (int i = NUM_MEASUREMENTS - 1; i >= 0; i--) {
-		totaldelta += counts[i];
-		totaltime += times[i];
-		if (totaltime > 3*gain_accel_scale) {
-			break;
+public:
+	AccelerateEncoder()
+	{
+		for (int i = 0; i < NUM_MEASUREMENTS; i++) {
+			counts[i] = 0;
+			times[i] = 0;
 		}
+		lasttime = 0;
 	}
 
-	int weight = abs(totaldelta);
+	int Accelerate(int delta)
+	{
+		uint32_t curtime = xTaskGetTickCount();
+		int timedelta = curtime - lasttime;
+		lasttime = curtime;
 
-	if (weight > gain_accel_threshold) {
-		return delta * (weight / gain_accel_threshold);
-	}
-
-	return delta;
-}
-
-static int AccelerateFrequency(int delta)
-{
-	static int counts[NUM_MEASUREMENTS] = {0};
-	static uint32_t times[NUM_MEASUREMENTS] = {0};
-	static uint32_t lasttime = 0;
-
-	uint32_t curtime = xTaskGetTickCount();
-	int timedelta = curtime - lasttime;
-	lasttime = curtime;
-
-	for (int i = 0; i < NUM_MEASUREMENTS - 1; i++) {
-		counts[i] = counts[i+1];
-		times[i] = times[i+1];
-	}
-
-	counts[NUM_MEASUREMENTS - 1] = delta;
-	times[NUM_MEASUREMENTS - 1] = timedelta;
-
-	int totaltime = 0;
-	int totaldelta = 0;
-	for (int i = NUM_MEASUREMENTS - 1; i >= 0; i--) {
-		totaldelta += counts[i];
-		totaltime += times[i];
-		if (totaltime > 3*gain_accel_scale) {
-			break;
+		for (int i = 0; i < NUM_MEASUREMENTS - 1; i++) {
+			counts[i] = counts[i+1];
+			times[i] = times[i+1];
 		}
+
+		counts[NUM_MEASUREMENTS - 1] = delta;
+		times[NUM_MEASUREMENTS - 1] = timedelta;
+
+		int totaltime = 0;
+		int totaldelta = 0;
+		for (int i = NUM_MEASUREMENTS - 1; i >= 0; i--) {
+			totaldelta += counts[i];
+			totaltime += times[i];
+			if (totaltime > 3*SCALE) {
+				break;
+			}
+		}
+
+		int weight = abs(totaldelta);
+
+		if (weight > THRESHOLD) {
+			return delta * (weight / THRESHOLD);
+		}
+
+		return delta;
 	}
+};
 
-	int weight = abs(totaldelta);
-
-	if (weight > freq_accel_threshold) {
-		return delta * (weight / freq_accel_threshold);
-	}
-
-	return delta;
-}
+AccelerateEncoder<100, 4> gain_accelerate;
+AccelerateEncoder<100, 3> frequency_accelerate;
 
 float FrontPanelState::ValidateFrequency(float frequency)
 {
@@ -275,12 +251,12 @@ void FrontPanel::Update()
 		}
 		else {
 			if (gaindelta) {
-				gaindelta = AccelerateGain(gaindelta);
+				gaindelta = gain_accelerate.Accelerate(gaindelta);
 				MoveGain(gaindelta);
 			}
 
 			if (freqdelta) {
-				freqdelta = AccelerateFrequency(freqdelta);
+				freqdelta = frequency_accelerate.Accelerate(freqdelta);
 				MoveFrequency(freqdelta);
 			}
 		}
