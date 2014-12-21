@@ -19,11 +19,11 @@ FilterParameters PrecalculateFilter(float f)
 	float scaling = float(1 << 25) / a0;
 
 	FilterParameters result = {
-			.a1 = int32_t(floor((a1 * scaling) + 0.5)),
-			.a2 = int32_t(floor((a2 * scaling) + 0.5)),
-			.b0 = int32_t(floor((b0 * scaling) + 0.5)),
-			.b1 = int32_t(floor((b1 * scaling) + 0.5)),
-			.b2 = int32_t(floor((b2 * scaling) + 0.5))
+			.a1 = int32_t(floorf((a1 * scaling) + 0.5)),
+			.a2 = int32_t(floorf((a2 * scaling) + 0.5)),
+			.b0 = int32_t(floorf((b0 * scaling) + 0.5)),
+			.b1 = int32_t(floorf((b1 * scaling) + 0.5)),
+			.b2 = int32_t(floorf((b2 * scaling) + 0.5))
 	};
 
 	return result;
