@@ -301,7 +301,7 @@ void Audio::Init()
 
 	AdcReset();
 	DacReset();
-	Clock(AUDIO_CLOCK_192000);
+	Clock(AUDIO_CLOCK_48000);
 	I2SSetup();
 
 	audio_waitus(100);
