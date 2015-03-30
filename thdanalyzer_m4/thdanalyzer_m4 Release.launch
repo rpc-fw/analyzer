@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="com.crt.dsfdebug.crtmcu.launchType">
 <stringAttribute key=".gdbinit" value=""/>
-<stringAttribute key="LAUNCH_ID.OFSemuDetails" value="LPC-Link v1.1"/>
+<stringAttribute key="LAUNCH_ID.OFSemuDetails" value="LPC-Link (WinUSB) or RDB-Link"/>
 <booleanAttribute key="com.crt.ctrlcenter.crtInit" value="true"/>
 <booleanAttribute key="com.crt.ctrlcenter.mainBreakIsHardware" value="false"/>
 <stringAttribute key="com.crt.ctrlcenter.targetbase" value="NXP LPC43xx (JTAG) (*)"/>
@@ -32,6 +32,6 @@
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
 <listEntry value="4"/>
 </listAttribute>
-<stringAttribute key="org.eclipse.dsf.launch.MEMORY_BLOCKS" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot;?&gt;&#10;&lt;memoryBlockExpressionList context=&quot;reserved-for-future-use&quot;/&gt;&#10;"/>
+<stringAttribute key="org.eclipse.dsf.launch.MEMORY_BLOCKS" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot;?&gt;&#13;&#10;&lt;memoryBlockExpressionList context=&quot;reserved-for-future-use&quot;/&gt;&#13;&#10;"/>
 <stringAttribute key="process_factory_id" value="org.eclipse.cdt.dsf.gdb.GdbProcessFactory"/>
 </launchConfiguration>

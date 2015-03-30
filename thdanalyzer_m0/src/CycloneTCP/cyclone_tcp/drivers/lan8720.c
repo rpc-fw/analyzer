@@ -34,7 +34,7 @@
    #include "lpc18xx.h"
 //LPC4330-Xplorer evaluation board?
 #elif defined(USE_LPC4330_XPLORER)
-   #include "lpc43xx.h"
+   #include "cmsis_lpc43xx.h"
 //STM32F4-DISCOVERY evaluation board?
 #elif defined(USE_STM32F4_DISCOVERY)
    #include "stm32f4xx.h"

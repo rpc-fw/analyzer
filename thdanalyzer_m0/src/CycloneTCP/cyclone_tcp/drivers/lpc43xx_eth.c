@@ -30,7 +30,7 @@
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "lpc43xx.h"
+#include "cmsis_lpc43xx.h"
 #include "core_cm0.h"
 #include "tcp_ip_stack.h"
 #include "lpc43xx_eth.h"
