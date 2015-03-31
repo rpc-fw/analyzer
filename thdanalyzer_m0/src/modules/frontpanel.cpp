@@ -120,6 +120,19 @@ float FrontPanelState::ValidateLevel(float level)
 	return level;
 }
 
+float FrontPanelState::ValidateCV(float cv)
+{
+	if (cv < -10.0) {
+		return -10.0;
+	}
+	else if (cv > 10.0) {
+		return 10.0;
+	}
+	else {
+		return cv;
+	}
+}
+
 void FrontPanel::Init()
 {
 	_firstupdate = true;
@@ -408,29 +421,70 @@ void FrontPanel::Cancel()
 
 void FrontPanel::MoveGain(int32_t delta)
 {
-	float level = _state->Level();
-	if (level <= -100.0) {
-		_state->SetLevel(level + float(delta));
-	}
-	else {
-		_state->SetLevel(level + float(delta) * 0.1);
+	switch (_state->OperationMode()) {
+	case FrontPanelState::OperationModeTHD:
+	case FrontPanelState::OperationModeFrequencyAnalysis:
+		{
+			float level = _state->Level();
+			if (level <= -100.0) {
+				_state->SetLevel(level + float(delta));
+			}
+			else {
+				_state->SetLevel(level + float(delta) * 0.1);
+			}
+		}
+		break;
+	case FrontPanelState::OperationModeDCVoltageControl:
+		{
+			if (delta < -25 || delta > 25) {
+				delta *= 20;
+			}
+			else if (delta < -20 || delta > 20) {
+				delta *= 10;
+			}
+			else if (delta < -15 || delta > 15) {
+				delta *= 5;
+			}
+			float cv = _state->Cv0();
+			_state->SetCv0(cv + float(delta) * 0.001);
+		}
+		break;
 	}
 }
 
 void FrontPanel::MoveFrequency(int32_t delta)
 {
-	float frequency = _state->Frequency();
-	if (frequency < 100.0) {
-		frequency = frequency + float(delta) * 0.01;
-	}
-	else if (frequency < 1000.0) {
-		frequency = frequency + float(delta) * 0.1;
-	}
-	else {
-		frequency = frequency + float(delta);
-	}
+	switch (_state->OperationMode()) {
+	case FrontPanelState::OperationModeTHD:
+	case FrontPanelState::OperationModeFrequencyAnalysis:
+		{
+			float frequency = _state->Frequency();
+			if (frequency < 100.0) {
+				frequency = frequency + float(delta) * 0.01;
+			}
+			else if (frequency < 1000.0) {
+				frequency = frequency + float(delta) * 0.1;
+			}
+			else {
+				frequency = frequency + float(delta);
+			}
 
-	_state->SetFrequency(frequency);
+			_state->SetFrequency(frequency);
+		}
+		break;
+	case FrontPanelState::OperationModeDCVoltageControl:
+		{
+			if (delta < -20 || delta > 20) {
+				delta *= 4;
+			}
+			else if (delta < -10 || delta > 10) {
+				delta *= 2;
+			}
+			float cv = _state->Cv1();
+			_state->SetCv1(cv + float(delta) * 0.001);
+		}
+		break;
+	}
 }
 
 void FrontPanel::FrequencyUp()
@@ -487,6 +541,8 @@ void FrontPanel::Configure()
 		// unbalanced I/O, add 6dB of gain
 		currentparams._level = _state->Enable() ? (_state->Level() + 6.0) : -160.0;
 	}
-	currentparams._analysismode = _state->OperationMode() == FrontPanelState::OperationModeFrequencyAnalysis;
+	currentparams._cv0 = _state->Cv0();
+	currentparams._cv1 = _state->Cv1();
+	currentparams._analysismode = static_cast<GeneratorParameters::OperationMode>(_state->OperationMode());
 	analyzercontrol.SetConfiguration(currentparams);
 }

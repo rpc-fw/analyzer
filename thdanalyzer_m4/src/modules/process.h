@@ -10,8 +10,13 @@ extern InputRing inputRing;
 class Process
 {
 public:
+	enum GeneratorMode
+	{
+		GeneratorModeOscillator,
+		GeneratorModeDC
+	};
 	void Init();
-	void SetParameters(float frequencyhz, float leveldbu, bool balancedio);
+	void SetParameters(GeneratorMode mode, float frequencyhz, float leveldbu, bool balancedio, float cv0, float cv1);
 };
 
 extern Process process;

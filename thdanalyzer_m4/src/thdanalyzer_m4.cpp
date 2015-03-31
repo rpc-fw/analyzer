@@ -82,7 +82,7 @@ enum MainTaskEvent {
 
 Analyzer analyzer;
 
-GeneratorParameters params = GeneratorParameters(1000.0, 4.0, true, false);
+GeneratorParameters params = GeneratorParameters(1000.0, 4.0, true, GeneratorParameters::OperationModeTHD, 0.0, 0.0);
 
 QueueHandle_t processingDoneQueue;
 
@@ -121,7 +121,11 @@ void vMainTask(void* pvParameters)
 
 	while(1) {
 		if (commandMailbox.Read(params)) {
-			process.SetParameters(params._frequency, params._level, params._balancedio);
+			Process::GeneratorMode mode = Process::GeneratorModeOscillator;
+			if (params._analysismode == GeneratorParameters::OperationModeDCVoltageControl) {
+				mode = Process::GeneratorModeDC;
+			}
+			process.SetParameters(mode, params._frequency, params._level, params._balancedio, params._cv0, params._cv1);
 			ackMailbox.Write(true);
 			analyzer.Refresh();
 		}
@@ -144,7 +148,7 @@ void vMainTask(void* pvParameters)
 		if (needToStart && analyzer.CanProcess()) {
 			xQueueReset(processingDoneQueue);
 			// start process task
-			BaseType_t r = xTaskCreate(vProcessTask, "process", 1024, NULL, 1, &analyzerTaskHandle);
+			(void) xTaskCreate(vProcessTask, "process", 1024, NULL, 1, &analyzerTaskHandle);
 			if (analyzerTaskHandle != NULL) {
 				needToStart = false;
 			}

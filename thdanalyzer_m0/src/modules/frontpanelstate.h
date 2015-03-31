@@ -1,6 +1,7 @@
 #ifndef FRONTPANELSTATE_H_
 #define FRONTPANELSTATE_H_
 
+#include "sharedtypes.h"
 #include "frontpanelmenu.h"
 #include "analyzerformat.h"
 
@@ -15,7 +16,8 @@ public:
 
 	enum OperationMode {
 		OperationModeTHD = 0,
-		OperationModeFrequencyAnalysis = 1
+		OperationModeFrequencyAnalysis = 1,
+		OperationModeDCVoltageControl = 2
 	};
 
 	FrontPanelState()
@@ -38,9 +40,20 @@ public:
 		_analyzerleveldisplaymode = AnalyzerFormat::LevelDisplayModeRefRelativeDecibel;
 		_distortionfrequencydisplaymode = AnalyzerFormat::FrequencyDisplayModeHz;
 		_distortionleveldisplaymode = AnalyzerFormat::LevelDisplayModeRefRelativeDecibel;
+
+		_cv0 = 0.0;
+		_cv1 = 0.0;
 	}
 
-	void SetOperationMode(OperationMode mode) { _operationmode = mode; Configure(); Refresh(); }
+	void SetOperationMode(OperationMode mode)
+	{
+		_operationmode = mode;
+		_cv0 = 0.0;
+		_cv1 = 0.0;
+		Configure();
+		Refresh();
+	}
+
 	OperationMode OperationMode() const { return _operationmode; }
 
 	void SetEnable(bool enable) { _enable = enable; Configure(); Refresh(); }
@@ -90,6 +103,12 @@ public:
 
 	void SetDistortionLevelDisplayMode(AnalyzerFormat::LevelDisplayMode mode) { _distortionleveldisplaymode = mode; Refresh(); }
 	AnalyzerFormat::LevelDisplayMode DistortionLevelDisplayMode() const { return _distortionleveldisplaymode; }
+
+	void SetCv0(float cv0) { _cv0 = ValidateCV(cv0); Configure(); Refresh(); }
+	float Cv0() const { return _cv0; }
+
+	void SetCv1(float cv1) { _cv1 = ValidateCV(cv1); Configure(); Refresh(); }
+	float Cv1() const { return _cv1; }
 
 	const char* RelativeLevelString() const
 	{
@@ -144,6 +163,7 @@ private:
 
 	float ValidateFrequency(float frequency);
 	float ValidateLevel(float level);
+	float ValidateCV(float cv);
 
 	bool _menu;
 	FrontPanelMenu::MenuEntryId _menuentry;
@@ -155,6 +175,9 @@ private:
 
 	float _distortionfrequency;
 	float _distortionlevel;
+
+	float _cv0;
+	float _cv1;
 
 	enum OperationMode _operationmode;
 	bool _enable;

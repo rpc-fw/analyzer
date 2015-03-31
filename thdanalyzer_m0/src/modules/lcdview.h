@@ -11,6 +11,9 @@ public:
 
 	void Refresh();
 private:
+	void RenderLevelFrequency();
+	void RenderCV();
+
 	FrontPanelState* _state;
 };
 

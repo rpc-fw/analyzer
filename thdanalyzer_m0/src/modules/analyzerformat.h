@@ -19,6 +19,8 @@ public:
 	};
 
 	static void Format(float frequency, float leveldBu, char* buffer, FrequencyDisplayMode freqmode, LevelDisplayMode levelmode, FrontPanelState *state);
+
+	static void FormatVoltage(const char* name, float voltage, char* buffer);
 };
 
 #endif /* ANALYZERFORMAT_H_ */

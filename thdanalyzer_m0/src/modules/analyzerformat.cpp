@@ -157,3 +157,22 @@ void AnalyzerFormat::Format(float frequency, float leveldBu, char* buffer, Frequ
 	}
 	buffer[16] = '\0';
 }
+
+void AnalyzerFormat::FormatVoltage(const char* name, float voltage, char* buffer)
+{
+	memset(buffer, 0, 16);
+
+	// avoid "-0.000"
+	if (fabs(voltage) < 0.0005) {
+		voltage = 0.0;
+	}
+
+	snprintf(&buffer[0], 16, "%s % 3.3f V", name, voltage);
+	for (int i = 0; i < 16; i++) {
+		if (buffer[i] == '\0') {
+			buffer[i] = ' ';
+		}
+	}
+
+	buffer[16] = '\0';
+}

@@ -34,6 +34,30 @@ void FillSpaces(char* buffer, int size)
 	buffer[size] = '\0';
 }
 
+void LcdView::RenderLevelFrequency()
+{
+	char text[17];
+	AnalyzerFormat::Format(_state->Frequency(), _state->Level(), text, _state->GeneratorFrequencyDisplayMode(), _state->GeneratorLevelDisplayMode(), _state);
+	lcd.Locate(0, 0);
+	lcd.Print(text);
+
+	AnalyzerFormat::Format(_state->DistortionFrequency(), _state->DistortionLevel(), text, _state->DistortionFrequencyDisplayMode(), _state->DistortionLevelDisplayMode(), _state);
+	lcd.Locate(0, 1);
+	lcd.Print(text);
+}
+
+void LcdView::RenderCV()
+{
+	char text[17];
+	AnalyzerFormat::FormatVoltage("CV1", _state->Cv0(), text);
+	lcd.Locate(0, 0);
+	lcd.Print(text);
+
+	AnalyzerFormat::FormatVoltage("CV2", _state->Cv1(), text);
+	lcd.Locate(0, 1);
+	lcd.Print(text);
+}
+
 void LcdView::Refresh()
 {
 	if (_state->MenuActive()) {
@@ -56,12 +80,16 @@ void LcdView::Refresh()
 		return;
 	}
 
-	char text[17];
-	AnalyzerFormat::Format(_state->Frequency(), _state->Level(), text, _state->GeneratorFrequencyDisplayMode(), _state->GeneratorLevelDisplayMode(), _state);
-	lcd.Locate(0, 0);
-	lcd.Print(text);
-
-	AnalyzerFormat::Format(_state->DistortionFrequency(), _state->DistortionLevel(), text, _state->DistortionFrequencyDisplayMode(), _state->DistortionLevelDisplayMode(), _state);
-	lcd.Locate(0, 1);
-	lcd.Print(text);
+	switch (_state->OperationMode())
+	{
+	case FrontPanelState::OperationModeTHD:
+	case FrontPanelState::OperationModeFrequencyAnalysis:
+		RenderLevelFrequency();
+		break;
+	case FrontPanelState::OperationModeDCVoltageControl:
+		RenderCV();
+		break;
+	default:
+		break;
+	}
 }

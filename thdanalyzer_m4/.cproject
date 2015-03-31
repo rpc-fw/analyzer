@@ -109,7 +109,7 @@
 									<listOptionValue builtIn="false" value="CMSIS_LPC43xx_DriverLib"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1302033917" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_LPC43xx_DriverLib/Release}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_LPC43xx_DriverLib/Debug}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.fpu.162391879" name="Floating point" superClass="com.crt.advproject.link.cpp.fpu" value="com.crt.advproject.link.cpp.fpu.fpv4" valueType="enumerated"/>
 								<option id="com.crt.advproject.link.cpp.crpenable.722674485" name="Enable Code Read Protect" superClass="com.crt.advproject.link.cpp.crpenable" value="false" valueType="boolean"/>

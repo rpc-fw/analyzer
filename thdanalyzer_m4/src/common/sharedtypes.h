@@ -9,15 +9,28 @@ struct GeneratorParameters
 	float _frequency;
 	float _level;
 	bool _balancedio;
-	bool _analysismode;
+
+	enum OperationMode
+	{
+		OperationModeTHD = 0,
+		OperationModeFrequencyAnalysis = 1,
+		OperationModeDCVoltageControl = 2
+	};
+
+	OperationMode _analysismode;
+
+	float _cv0;
+	float _cv1;
 
 	GeneratorParameters() {}
 
-	GeneratorParameters(float frequency, float level, bool balancedio, bool analysismode)
+	GeneratorParameters(float frequency, float level, bool balancedio, OperationMode analysismode, float cv0, float cv1)
 	: _frequency(frequency),
 	  _level(level),
 	  _balancedio(balancedio),
-	  _analysismode(analysismode)
+	  _analysismode(analysismode),
+	  _cv0(cv0),
+	  _cv1(cv1)
 	{
 	}
 };

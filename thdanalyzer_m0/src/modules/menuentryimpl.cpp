@@ -96,6 +96,9 @@ void OperationModeMenuEntry::Render(FrontPanelState* state, LcdBuffer& buffer) c
 	case FrontPanelState::OperationModeFrequencyAnalysis:
 		strncpy(buffer.row2, "Freq.Analysis", buffer.Width());
 		break;
+	case FrontPanelState::OperationModeDCVoltageControl:
+		strncpy(buffer.row2, "DC Voltage", buffer.Width());
+		break;
 	}
 }
 
@@ -103,7 +106,8 @@ void OperationModeMenuEntry::ChangeValue(FrontPanelState* state, int delta) cons
 {
 	const static enum FrontPanelState::OperationMode presets[] = {
 			FrontPanelState::OperationModeTHD,
-			FrontPanelState::OperationModeFrequencyAnalysis
+			FrontPanelState::OperationModeFrequencyAnalysis,
+			FrontPanelState::OperationModeDCVoltageControl
 	};
 
 	state->SetOperationMode(enumselect(presets, state->OperationMode(), delta));
