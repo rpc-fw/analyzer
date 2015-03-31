@@ -541,8 +541,8 @@ void FrontPanel::Configure()
 		// unbalanced I/O, add 6dB of gain
 		currentparams._level = _state->Enable() ? (_state->Level() + 6.0) : -160.0;
 	}
-	currentparams._cv0 = _state->Cv0();
-	currentparams._cv1 = _state->Cv1();
+	currentparams._cv0 = _state->Enable() ? _state->Cv0() : 0.0;
+	currentparams._cv1 = _state->Enable() ? _state->Cv1() : 0.0;
 	currentparams._analysismode = static_cast<GeneratorParameters::OperationMode>(_state->OperationMode());
 	analyzercontrol.SetConfiguration(currentparams);
 }
